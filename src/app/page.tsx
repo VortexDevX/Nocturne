@@ -1,66 +1,47 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import FileUpload from "@/components/FileUpload";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
+import Notes from "@/components/Notes";
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="page-container page-fade">
+      {/* Content */}
+      <div className="page-content px-5 py-6">
+        <div className="w-full max-w-md space-y-6">
+          {/* Header */}
+          <header className="text-center animate-fade-in-up">
+            <div className="inline-flex items-center justify-center w-24 h-24 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
+              <img src="./logo.png" alt="Nocturne" className="w-24 h-24" />
+            </div>
+
+            <h1 className="text-xl font-semibold tracking-tight mb-1">
+              Nocturne
+            </h1>
+
+            <p className="text-(--muted) text-lg">Read without distraction</p>
+          </header>
+
+          {/* Upload Area */}
+          <div className="animate-fade-in-up stagger-1">
+            <FileUpload compact />
+          </div>
+
+          {/* Notes Section */}
+          <div className="animate-fade-in-up stagger-2">
+            <div className="surface p-4">
+              <Notes compact />
+            </div>
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Footer */}
+      <footer className="page-footer px-5 py-4">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <p className="text-sm text-(--muted)">Nocturne · Offline</p>
+          <ThemeSwitcher />
         </div>
-      </main>
-    </div>
+      </footer>
+    </main>
   );
 }
