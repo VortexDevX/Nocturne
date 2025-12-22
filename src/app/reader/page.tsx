@@ -10,6 +10,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import SwipeBack from "@/components/SwipeBack";
 import PullToRefresh from "@/components/PullToRefresh";
 import { ArrowLeftIcon, SettingsIcon, BookOpenIcon } from "@/components/Icons";
+import { useScrollDirection } from "@/lib/useScrollDirection";
 import {
   loadSettings,
   saveSettings,
@@ -23,6 +24,12 @@ export default function ReaderPage() {
   const [settings, setSettings] = useState<ReaderSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Auto-hide header hook
+  const { direction, isAtTop } = useScrollDirection(10);
+
+  // Show header when: at top, scrolling up, or settings open
+  const showHeader = isAtTop || direction === "up" || showSettings;
 
   useEffect(() => {
     const savedContent = sessionStorage.getItem("nocturne_content");
@@ -48,9 +55,7 @@ export default function ReaderPage() {
   }, [router]);
 
   const handleRefresh = useCallback(async () => {
-    // Scroll to top as "refresh"
     window.scrollTo({ top: 0, behavior: "smooth" });
-    // Small delay for visual feedback
     await new Promise((resolve) => setTimeout(resolve, 300));
   }, []);
 
@@ -109,16 +114,31 @@ export default function ReaderPage() {
 
       <PullToRefresh onRefresh={handleRefresh}>
         <main className="min-h-screen page-fade overflow-x-hidden">
-          {/* Header */}
+          {/* Auto-hide Header */}
           <header
-            className="
-              sticky top-0 z-30
-              bg-(--bg)/80 backdrop-blur-md
-              border-b border-(--border)/50
-              transition-colors duration-200
-            "
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 30,
+              backgroundColor: "var(--bg)",
+              borderBottom: "1px solid var(--border)",
+              transform: showHeader ? "translateY(0)" : "translateY(-100%)",
+              transition: "transform 0.3s ease-out",
+            }}
           >
-            <div className="max-w-reader mx-auto px-4">
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundColor: "var(--bg)",
+                opacity: 0.8,
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
+            />
+            <div className="max-w-reader mx-auto px-4 relative">
               <div className="flex items-center justify-between h-14">
                 <button
                   onClick={handleBack}
@@ -144,6 +164,9 @@ export default function ReaderPage() {
               </div>
             </div>
           </header>
+
+          {/* Spacer for fixed header */}
+          <div style={{ height: "56px" }} />
 
           {/* Reader Content */}
           <div className="max-w-reader mx-auto px-5 pb-20 overflow-x-hidden">

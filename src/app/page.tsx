@@ -1,6 +1,7 @@
 import FileUpload from "@/components/FileUpload";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import Notes from "@/components/Notes";
+import InstallPWA from "@/components/InstallPWA";
 
 export default function Home() {
   return (
@@ -10,15 +11,15 @@ export default function Home() {
         <div className="w-full max-w-md space-y-6">
           {/* Header */}
           <header className="text-center animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-24 h-24 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
-              <img src="./logo.png" alt="Nocturne" className="w-24 h-24" />
+            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
+              <img src="./logo.png" alt="Nocturne" className="w-8 h-8" />
             </div>
 
-            <h1 className="text-xl font-semibold tracking-tight mb-1">
+            <h1 className="text-2xl font-semibold tracking-tight mb-1">
               Nocturne
             </h1>
 
-            <p className="text-(--muted) text-lg">Read without distraction</p>
+            <p className="text-(--muted) text-m">Read without distraction</p>
           </header>
 
           {/* Upload Area */}
@@ -31,6 +32,11 @@ export default function Home() {
             <div className="surface p-4">
               <Notes compact />
             </div>
+          </div>
+
+          {/* Install PWA Button */}
+          <div className="animate-fade-in-up stagger-3">
+            <InstallPWA />
           </div>
         </div>
       </div>

@@ -219,7 +219,7 @@ export default function Settings({ settings, onChange }: Props) {
             {settings.lineHeight.toFixed(1)}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex mb-1 items-center gap-3">
           <svg
             width="16"
             height="16"
