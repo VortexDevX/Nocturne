@@ -25,11 +25,22 @@ export default function ReaderPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Auto-hide header hook
+  // Auto-hide header
   const { direction, isAtTop } = useScrollDirection(10);
+  const [headerVisible, setHeaderVisible] = useState(true);
 
-  // Show header when: at top, scrolling up, or settings open
-  const showHeader = isAtTop || direction === "up" || showSettings;
+  // Update header visibility based on scroll
+  useEffect(() => {
+    if (showSettings) {
+      setHeaderVisible(true);
+    } else if (isAtTop) {
+      setHeaderVisible(true);
+    } else if (direction === "down") {
+      setHeaderVisible(false);
+    } else if (direction === "up") {
+      setHeaderVisible(true);
+    }
+  }, [direction, isAtTop, showSettings]);
 
   useEffect(() => {
     const savedContent = sessionStorage.getItem("nocturne_content");
@@ -108,77 +119,92 @@ export default function ReaderPage() {
   }
 
   return (
-    <div className="overflow-x-hidden max-w-full">
+    <>
+      {/* Progress Bar - Always visible at very top */}
       <ProgressBar />
+
+      {/* Auto-hide Header - OUTSIDE of PullToRefresh */}
+      <header
+        id="reader-header"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          height: "56px",
+          backgroundColor: "var(--bg)",
+          borderBottom: "1px solid var(--border)",
+          transform: headerVisible ? "translateY(0)" : "translateY(-100%)",
+          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          willChange: "transform",
+        }}
+      >
+        {/* Blur overlay */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "var(--bg)",
+            opacity: 0.85,
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+          }}
+        />
+
+        {/* Header content */}
+        <div className="max-w-reader mx-auto px-4 h-full relative z-10">
+          <div className="flex items-center justify-between h-full">
+            <button
+              onClick={handleBack}
+              className="icon-button -ml-2 shrink-0"
+              aria-label="Go back"
+            >
+              <ArrowLeftIcon size={20} />
+            </button>
+
+            <div className="flex-1 mx-4 min-w-0 overflow-hidden">
+              <h1 className="text-sm font-medium truncate text-center text-(--muted)">
+                {filename.replace(/\.(txt|epub)$/i, "")}
+              </h1>
+            </div>
+
+            <button
+              onClick={openSettings}
+              className="icon-button -mr-2 shrink-0"
+              aria-label="Open settings"
+            >
+              <SettingsIcon size={20} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Swipe back handler */}
       <SwipeBack onBack={handleBack} />
 
-      <PullToRefresh onRefresh={handleRefresh}>
-        <main className="min-h-screen page-fade overflow-x-hidden">
-          {/* Auto-hide Header */}
-          <header
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 30,
-              backgroundColor: "var(--bg)",
-              borderBottom: "1px solid var(--border)",
-              transform: showHeader ? "translateY(0)" : "translateY(-100%)",
-              transition: "transform 0.3s ease-out",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundColor: "var(--bg)",
-                opacity: 0.8,
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-              }}
-            />
-            <div className="max-w-reader mx-auto px-4 relative">
-              <div className="flex items-center justify-between h-14">
-                <button
-                  onClick={handleBack}
-                  className="icon-button -ml-2 shrink-0"
-                  aria-label="Go back"
-                >
-                  <ArrowLeftIcon size={20} />
-                </button>
+      {/* Main content area */}
+      <div className="overflow-x-hidden max-w-full">
+        <PullToRefresh onRefresh={handleRefresh}>
+          <main className="min-h-screen overflow-x-hidden">
+            {/* Spacer for fixed header */}
+            <div style={{ height: "56px" }} aria-hidden="true" />
 
-                <div className="flex-1 mx-4 min-w-0 overflow-hidden">
-                  <h1 className="text-sm font-medium truncate text-center text-(--muted)">
-                    {filename.replace(/\.(txt|epub)$/i, "")}
-                  </h1>
-                </div>
-
-                <button
-                  onClick={openSettings}
-                  className="icon-button -mr-2 shrink-0"
-                  aria-label="Open settings"
-                >
-                  <SettingsIcon size={20} />
-                </button>
-              </div>
+            {/* Reader Content */}
+            <div className="max-w-reader mx-auto px-5 pb-20 overflow-x-hidden">
+              <Reader content={content} settings={settings} />
             </div>
-          </header>
 
-          {/* Spacer for fixed header */}
-          <div style={{ height: "56px" }} />
+            {/* Bottom spacer */}
+            <div className="h-32" />
+          </main>
+        </PullToRefresh>
+      </div>
 
-          {/* Reader Content */}
-          <div className="max-w-reader mx-auto px-5 pb-20 overflow-x-hidden">
-            <Reader content={content} settings={settings} />
-          </div>
-
-          <div className="h-32" />
-        </main>
-      </PullToRefresh>
-
+      {/* Scroll to top button */}
       <ScrollToTop />
 
+      {/* Settings bottom sheet */}
       <BottomSheet
         isOpen={showSettings}
         onClose={closeSettings}
@@ -186,6 +212,6 @@ export default function ReaderPage() {
       >
         <Settings settings={settings} onChange={setSettings} />
       </BottomSheet>
-    </div>
+    </>
   );
 }

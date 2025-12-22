@@ -11,8 +11,8 @@ export default function Home() {
         <div className="w-full max-w-md space-y-6">
           {/* Header */}
           <header className="text-center animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-12 h-12 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
-              <img src="./logo.png" alt="Nocturne" className="w-8 h-8" />
+            <div className="inline-flex items-center justify-center w-17 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
+              <img src="./logo.png" alt="Nocturne" />
             </div>
 
             <h1 className="text-2xl font-semibold tracking-tight mb-1">
