@@ -8,7 +8,6 @@ import {
   FONT_SIZE_MAX,
   LINE_HEIGHT_MIN,
   LINE_HEIGHT_MAX,
-  FontFamily,
 } from "@/lib/readerSettings";
 import { ThemeName } from "@/lib/themes";
 import { useTheme } from "@/lib/useTheme";
@@ -27,15 +26,6 @@ const THEMES: { key: ThemeName; label: string; bg: string }[] = [
   { key: "sepia", label: "Sepia", bg: "#f5f0e6" },
   { key: "amoled", label: "AMOLED", bg: "#000000" },
 ];
-
-// Group fonts by category
-const FONT_CATEGORIES = FONT_OPTIONS.reduce((acc, font) => {
-  if (!acc[font.category]) {
-    acc[font.category] = [];
-  }
-  acc[font.category].push(font);
-  return acc;
-}, {} as Record<string, typeof FONT_OPTIONS>);
 
 export default function Settings({ settings, onChange }: Props) {
   const { theme, setTheme } = useTheme();
@@ -151,40 +141,31 @@ export default function Settings({ settings, onChange }: Props) {
         <p className="text-xs text-(--muted) text-center mt-3">{accent.name}</p>
       </section>
 
-      {/* Font Family - Grouped */}
+      {/* Font Family - Flat List */}
       <section>
         <label className="block text-sm font-medium text-(--muted) mb-3">
           Font
         </label>
-        <div className="space-y-4">
-          {Object.entries(FONT_CATEGORIES).map(([category, fonts]) => (
-            <div key={category}>
-              <p className="text-xs text-(--muted) mb-2 uppercase tracking-wide">
-                {category}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {fonts.map((font) => (
-                  <button
-                    key={font.value}
-                    onClick={() => updateSetting("fontFamily", font.value)}
-                    className={`
-                      py-2 px-3 rounded-xl
-                      text-sm
-                      border transition-all duration-200
-                      focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)
-                      ${
-                        settings.fontFamily === font.value
-                          ? "bg-(--accent) text-white border-(--accent)"
-                          : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
-                      }
-                    `}
-                    style={{ fontFamily: FONT_STACKS[font.value] }}
-                  >
-                    {font.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          {FONT_OPTIONS.map((font) => (
+            <button
+              key={font.value}
+              onClick={() => updateSetting("fontFamily", font.value)}
+              className={`
+                py-2 px-3 rounded-xl
+                text-sm
+                border transition-all duration-200
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)
+                ${
+                  settings.fontFamily === font.value
+                    ? "bg-(--accent) text-white border-(--accent)"
+                    : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
+                }
+              `}
+              style={{ fontFamily: FONT_STACKS[font.value] }}
+            >
+              {font.label}
+            </button>
           ))}
         </div>
       </section>
@@ -237,7 +218,7 @@ export default function Settings({ settings, onChange }: Props) {
             {settings.lineHeight.toFixed(1)}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex mb-1 items-center gap-3">
           <svg
             width="16"
             height="16"

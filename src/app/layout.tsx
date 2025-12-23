@@ -2,10 +2,6 @@ import type { Metadata, Viewport } from "next";
 import {
   Inter,
   Fira_Code,
-  Source_Serif_4,
-  Literata,
-  Lora,
-  Merriweather,
   Lexend,
   Atkinson_Hyperlegible,
   Open_Sans,
@@ -24,31 +20,6 @@ const firaCode = Fira_Code({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-fira",
-});
-
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-source-serif",
-});
-
-const literata = Literata({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-literata",
-});
-
-const lora = Lora({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-lora",
-});
-
-const merriweather = Merriweather({
-  subsets: ["latin"],
-  weight: ["300", "400", "700"],
-  display: "swap",
-  variable: "--font-merriweather",
 });
 
 const lexend = Lexend({
@@ -105,10 +76,6 @@ export default function RootLayout({
       className={`
         ${inter.variable} 
         ${firaCode.variable} 
-        ${sourceSerif.variable}
-        ${literata.variable}
-        ${lora.variable}
-        ${merriweather.variable}
         ${lexend.variable}
         ${atkinson.variable}
         ${openSans.variable}
