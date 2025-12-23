@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Reader from "@/components/Reader";
 import Settings from "@/components/Settings";
@@ -9,8 +9,15 @@ import ProgressBar from "@/components/ProgressBar";
 import ScrollToTop from "@/components/ScrollToTop";
 import SwipeBack from "@/components/SwipeBack";
 import PullToRefresh from "@/components/PullToRefresh";
-import { ArrowLeftIcon, SettingsIcon, BookOpenIcon } from "@/components/Icons";
+import SearchBar from "@/components/SearchBar";
+import {
+  ArrowLeftIcon,
+  SettingsIcon,
+  BookOpenIcon,
+  SearchIcon,
+} from "@/components/Icons";
 import { useScrollDirection } from "@/lib/useScrollDirection";
+import { processContent, countMatches } from "@/lib/textProcessor";
 import {
   loadSettings,
   saveSettings,
@@ -23,15 +30,29 @@ export default function ReaderPage() {
   const [filename, setFilename] = useState("");
   const [settings, setSettings] = useState<ReaderSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   // Auto-hide header
   const { direction, isAtTop } = useScrollDirection(10);
   const [headerVisible, setHeaderVisible] = useState(true);
 
-  // Update header visibility based on scroll
+  // Process content once (same as Reader uses)
+  const paragraphs = useMemo(() => processContent(content), [content]);
+
+  // Calculate total matches using same processed text
+  const totalMatches = useMemo(
+    () => countMatches(paragraphs, searchQuery),
+    [paragraphs, searchQuery]
+  );
+
+  // Update header visibility
   useEffect(() => {
-    if (showSettings) {
+    if (showSettings || showSearch) {
       setHeaderVisible(true);
     } else if (isAtTop) {
       setHeaderVisible(true);
@@ -40,7 +61,7 @@ export default function ReaderPage() {
     } else if (direction === "up") {
       setHeaderVisible(true);
     }
-  }, [direction, isAtTop, showSettings]);
+  }, [direction, isAtTop, showSettings, showSearch]);
 
   useEffect(() => {
     const savedContent = sessionStorage.getItem("nocturne_content");
@@ -59,6 +80,19 @@ export default function ReaderPage() {
     }
   }, [settings, mounted]);
 
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleBack = useCallback(() => {
     sessionStorage.removeItem("nocturne_content");
     sessionStorage.removeItem("nocturne_filename");
@@ -72,6 +106,18 @@ export default function ReaderPage() {
 
   const openSettings = useCallback(() => setShowSettings(true), []);
   const closeSettings = useCallback(() => setShowSettings(false), []);
+  const openSearch = useCallback(() => setShowSearch(true), []);
+
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery("");
+    setCurrentMatchIndex(0);
+  }, []);
+
+  const handleSearch = useCallback((query: string, currentIndex: number) => {
+    setSearchQuery(query);
+    setCurrentMatchIndex(currentIndex);
+  }, []);
 
   // Loading state
   if (!mounted) {
@@ -120,10 +166,9 @@ export default function ReaderPage() {
 
   return (
     <>
-      {/* Progress Bar - Always visible at very top */}
       <ProgressBar />
 
-      {/* Auto-hide Header - OUTSIDE of PullToRefresh */}
+      {/* Header */}
       <header
         id="reader-header"
         style={{
@@ -140,7 +185,6 @@ export default function ReaderPage() {
           willChange: "transform",
         }}
       >
-        {/* Blur overlay */}
         <div
           style={{
             position: "absolute",
@@ -152,7 +196,6 @@ export default function ReaderPage() {
           }}
         />
 
-        {/* Header content */}
         <div className="max-w-reader mx-auto px-4 h-full relative z-10">
           <div className="flex items-center justify-between h-full">
             <button
@@ -169,42 +212,59 @@ export default function ReaderPage() {
               </h1>
             </div>
 
-            <button
-              onClick={openSettings}
-              className="icon-button -mr-2 shrink-0"
-              aria-label="Open settings"
-            >
-              <SettingsIcon size={20} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={openSearch}
+                className="icon-button shrink-0"
+                aria-label="Search"
+              >
+                <SearchIcon size={20} />
+              </button>
+
+              <button
+                onClick={openSettings}
+                className="icon-button -mr-2 shrink-0"
+                aria-label="Open settings"
+              >
+                <SettingsIcon size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Swipe back handler */}
+      {/* Search Bar */}
+      <SearchBar
+        isOpen={showSearch}
+        onClose={closeSearch}
+        content={content}
+        onSearch={handleSearch}
+        totalMatches={totalMatches}
+      />
+
       <SwipeBack onBack={handleBack} />
 
-      {/* Main content area */}
       <div className="overflow-x-hidden max-w-full">
         <PullToRefresh onRefresh={handleRefresh}>
           <main className="min-h-screen overflow-x-hidden">
-            {/* Spacer for fixed header */}
             <div style={{ height: "56px" }} aria-hidden="true" />
 
-            {/* Reader Content */}
             <div className="max-w-reader mx-auto px-5 pb-20 overflow-x-hidden">
-              <Reader content={content} settings={settings} />
+              <Reader
+                content={content}
+                settings={settings}
+                searchQuery={searchQuery}
+                currentMatchIndex={currentMatchIndex}
+              />
             </div>
 
-            {/* Bottom spacer */}
             <div className="h-32" />
           </main>
         </PullToRefresh>
       </div>
 
-      {/* Scroll to top button */}
       <ScrollToTop />
 
-      {/* Settings bottom sheet */}
       <BottomSheet
         isOpen={showSettings}
         onClose={closeSettings}

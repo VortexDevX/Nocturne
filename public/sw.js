@@ -1,5 +1,6 @@
-const CACHE_NAME = "nocturne-v1";
-const STATIC_ASSETS = ["/", "/reader", "/logo.png"];
+const CACHE_NAME = "nocturne-v2";
+
+const STATIC_ASSETS = ["/", "/reader", "/logo.png", "/manifest.json"];
 
 // Install - cache static assets
 self.addEventListener("install", (event) => {
@@ -25,35 +26,72 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch - network first, fallback to cache
+// Fetch strategy: Cache first for static, Network first for dynamic
 self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
   // Skip non-GET requests
-  if (event.request.method !== "GET") return;
+  if (request.method !== "GET") return;
 
-  // Skip external requests
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  // Skip external requests (except Google Fonts)
+  const url = new URL(request.url);
+  const isExternal = url.origin !== self.location.origin;
+  const isGoogleFont =
+    url.origin.includes("fonts.googleapis.com") ||
+    url.origin.includes("fonts.gstatic.com");
 
+  if (isExternal && !isGoogleFont) return;
+
+  // For navigation requests, try network first
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(request) || caches.match("/"))
+    );
+    return;
+  }
+
+  // For other requests (assets, fonts), cache first
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone and cache the response
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+    caches.match(request).then((cached) => {
+      if (cached) {
+        // Return cached, but also update cache in background
+        fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, response);
+              });
+            }
+          })
+          .catch(() => {});
+        return cached;
+      }
+
+      // Not in cache, fetch from network
+      return fetch(request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+          });
+        }
         return response;
-      })
-      .catch(() => {
-        // Fallback to cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // If it's a navigation request, return the cached index
-          if (event.request.mode === "navigate") {
-            return caches.match("/");
-          }
-        });
-      })
+      });
+    })
   );
+});
+
+// Listen for messages from the app
+self.addEventListener("message", (event) => {
+  if (event.data === "skipWaiting") {
+    self.skipWaiting();
+  }
 });

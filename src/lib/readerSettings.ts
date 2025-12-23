@@ -1,4 +1,13 @@
-export type FontFamily = "serif" | "sans" | "mono";
+export type FontFamily =
+  | "serif"
+  | "sans"
+  | "mono"
+  | "literata"
+  | "lora"
+  | "merriweather"
+  | "lexend"
+  | "atkinson"
+  | "opensans";
 
 export type ReaderSettings = {
   fontSize: number;
@@ -17,17 +26,35 @@ export const FONT_SIZE_MAX = 28;
 export const LINE_HEIGHT_MIN = 1.4;
 export const LINE_HEIGHT_MAX = 2.2;
 
-export const FONT_OPTIONS: { value: FontFamily; label: string }[] = [
-  { value: "serif", label: "Serif" },
-  { value: "sans", label: "Sans" },
-  { value: "mono", label: "Mono" },
+export const FONT_OPTIONS: {
+  value: FontFamily;
+  label: string;
+  category: string;
+}[] = [
+  // Serif fonts
+  { value: "serif", label: "System Serif", category: "Serif" },
+  { value: "literata", label: "Literata", category: "Serif" },
+  { value: "lora", label: "Lora", category: "Serif" },
+  { value: "merriweather", label: "Merriweather", category: "Serif" },
+  // Sans fonts
+  { value: "sans", label: "Inter", category: "Sans" },
+  { value: "opensans", label: "Open Sans", category: "Sans" },
+  { value: "lexend", label: "Lexend", category: "Sans" },
+  { value: "atkinson", label: "Atkinson", category: "Accessibility" },
+  // Mono fonts
+  { value: "mono", label: "Fira Code", category: "Mono" },
 ];
 
-// Full font stacks for each option
 export const FONT_STACKS: Record<FontFamily, string> = {
   serif: "var(--font-source-serif), Georgia, Cambria, 'Times New Roman', serif",
   sans: "var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif",
-  mono: "var(--font-fira), ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace",
+  mono: "var(--font-fira), ui-monospace, SFMono-Regular, Consolas, monospace",
+  literata: "var(--font-literata), Georgia, serif",
+  lora: "var(--font-lora), Georgia, serif",
+  merriweather: "var(--font-merriweather), Georgia, serif",
+  lexend: "var(--font-lexend), sans-serif",
+  atkinson: "var(--font-atkinson), sans-serif",
+  opensans: "var(--font-opensans), sans-serif",
 };
 
 const KEY = "nocturne_reader_settings";
