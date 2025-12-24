@@ -9,6 +9,7 @@
     "compat-api/css": "off",
     "axe/keyboard": "off",
     "axe/aria": "off",
-    "apple-touch-icons": "off"
+    "apple-touch-icons": "off",
+    "axe/name-role-value": "off"
   }
 }

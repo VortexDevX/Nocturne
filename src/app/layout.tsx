@@ -9,32 +9,29 @@ import {
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import ThemeInitializer from "@/components/ThemeInitializer";
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
 });
-
 const firaCode = Fira_Code({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-fira",
 });
-
 const lexend = Lexend({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-lexend",
 });
-
 const atkinson = Atkinson_Hyperlegible({
   subsets: ["latin"],
   weight: ["400", "700"],
   display: "swap",
   variable: "--font-atkinson",
 });
-
 const openSans = Open_Sans({
   subsets: ["latin"],
   display: "swap",
@@ -53,16 +50,18 @@ export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
   },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -87,6 +86,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="antialiased">
+        <ThemeInitializer />
         {children}
         <ServiceWorkerRegister />
         <OfflineIndicator />

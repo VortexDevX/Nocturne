@@ -1,18 +1,17 @@
-const CACHE_NAME = "nocturne-v2";
+const CACHE_NAME = "nocturne-v4";
 
-const STATIC_ASSETS = ["/", "/reader", "/logo.png", "/manifest.json"];
+// Initial cache for core shell
+const PRECACHE_ASSETS = ["/", "/logo.png", "/manifest.json"];
 
-// Install - cache static assets
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(PRECACHE_ASSETS);
     })
   );
-  self.skipWaiting();
 });
 
-// Activate - clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -26,72 +25,52 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch strategy: Cache first for static, Network first for dynamic
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
-  // Skip non-GET requests
   if (request.method !== "GET") return;
 
-  // Skip external requests (except Google Fonts)
-  const url = new URL(request.url);
-  const isExternal = url.origin !== self.location.origin;
-  const isGoogleFont =
-    url.origin.includes("fonts.googleapis.com") ||
-    url.origin.includes("fonts.gstatic.com");
+  // 1. Static Assets (CSS, JS, Images, Next.js chunks) - Cache First
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.match(/\.(png|jpg|jpeg|svg|css|js)$/)
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type !== "basic"
+          ) {
+            return response;
+          }
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
-  if (isExternal && !isGoogleFont) return;
-
-  // For navigation requests, try network first
+  // 2. Navigation (HTML) - Network First
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request) || caches.match("/"))
-    );
-    return;
-  }
-
-  // For other requests (assets, fonts), cache first
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        // Return cached, but also update cache in background
-        fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, response);
-              });
-            }
-          })
-          .catch(() => {});
-        return cached;
-      }
-
-      // Not in cache, fetch from network
-      return fetch(request).then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            return cached || caches.match("/");
           });
-        }
-        return response;
-      });
-    })
-  );
-});
-
-// Listen for messages from the app
-self.addEventListener("message", (event) => {
-  if (event.data === "skipWaiting") {
-    self.skipWaiting();
+        })
+    );
   }
 });
