@@ -44,8 +44,9 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "black-translucent", // Allows content to go under status bar
     title: "Nocturne",
+    startupImage: [], // Optional: prevents default white flash
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -60,7 +61,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
+  viewportFit: "cover", // Crucial: fills the whole screen (notch area)
   themeColor: "#0a0a0a",
 };
 
