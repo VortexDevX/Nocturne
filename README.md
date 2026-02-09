@@ -8,7 +8,7 @@
   Upload a TXT or EPUB. Read. Close. Nothing stored. Ever.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://nocturne-opal.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
@@ -23,15 +23,15 @@
 ### 📖 Reading Experience
 
 - **Drag & Drop Upload** — Drop a file or tap to browse
-- **TXT & EPUB Support** — Built specifically for novel chapters
-- **Comfortable Typography** — Adjust font size, line height, and font family
-- **Multiple Fonts** — Serif, Sans (Inter), or Mono (Fira Code)
+- **TXT & EPUB Support** — Native parsing for novel chapters
+- **Comfortable Typography** — Adjust font size and line height
+- **Rich Font Selection** — Inter, Open Sans, Lexend, Atkinson Hyperlegible, and Fira Code
 - **Distraction-Free UI** — Controls stay out of the way while reading
 
 ### 🎨 Theming
 
 - **4 Themes** — Light, Dark, Sepia, and AMOLED
-- **Accent Colors** — Subtle personalization without distraction
+- **Accent Colors** — Personalize your experience
 - **Smooth Transitions** — Easy on the eyes when switching themes
 
 ### 📱 Mobile First
@@ -94,10 +94,11 @@
 
 | Technology                                    | Purpose                         |
 | --------------------------------------------- | ------------------------------- |
-| [Next.js](https://nextjs.org/)                | React framework with App Router |
-| [React](https://react.dev/)                   | UI library                      |
+| [Next.js 16](https://nextjs.org/)             | React framework with App Router |
+| [React 19](https://react.dev/)                | UI library                      |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety                     |
-| [Tailwind CSS](https://tailwindcss.com/)      | Styling                         |
+| [Tailwind CSS 4](https://tailwindcss.com/)    | Styling                         |
+| [Lucide React](https://lucide.dev/)           | Icons                           |
 | [JSZip](https://stuk.github.io/jszip/)        | EPUB parsing                    |
 
 ---
