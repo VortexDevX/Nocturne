@@ -10,21 +10,20 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPWA() {
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const iOSStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone;
+    return window.matchMedia("(display-mode: standalone)").matches || !!iOSStandalone;
+  });
+  const [isIOS] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const iPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return iOS || iPadOS;
+  });
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-      return;
-    }
-
-    // Check if iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(isIOSDevice);
-
     // Listen for install prompt (Android/Desktop Chrome)
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -152,7 +151,7 @@ export default function InstallPWA() {
                 <p>
                   Scroll down and tap{" "}
                   <span className="font-medium text-(--text)">
-                    "Add to Home Screen"
+                    &quot;Add to Home Screen&quot;
                   </span>
                 </p>
               </div>
@@ -162,7 +161,7 @@ export default function InstallPWA() {
                   3
                 </span>
                 <p>
-                  Tap <span className="font-medium text-(--text)">"Add"</span>{" "}
+                  Tap <span className="font-medium text-(--text)">&quot;Add&quot;</span>{" "}
                   to install
                 </p>
               </div>

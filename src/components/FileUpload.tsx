@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { parseEpub } from "@/lib/epubParser";
+import { cleanText } from "@/lib/textParser";
+import { parseTxt } from "@/lib/txtParser";
+import { saveActiveDocument } from "@/lib/sessionDocumentStore";
 import { UploadIcon, FileTextIcon, LoaderIcon } from "./Icons";
 
 type UploadState = "idle" | "dragging" | "loading" | "error";
@@ -16,15 +19,23 @@ export default function FileUpload({ compact = false }: Props) {
   const [state, setState] = useState<UploadState>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const resetTimerRef = useRef<number | null>(null);
 
-  const processFile = async (file: File) => {
+  const scheduleReset = useCallback(() => {
+    if (resetTimerRef.current) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+    resetTimerRef.current = window.setTimeout(() => setState("idle"), 3000);
+  }, []);
+
+  const processFile = useCallback(async (file: File) => {
     const isText = file.name.toLowerCase().endsWith(".txt");
     const isEpub = file.name.toLowerCase().endsWith(".epub");
 
     if (!isText && !isEpub) {
       setState("error");
       setErrorMessage("Please upload a TXT or EPUB file");
-      setTimeout(() => setState("idle"), 3000);
+      scheduleReset();
       return;
     }
 
@@ -32,19 +43,26 @@ export default function FileUpload({ compact = false }: Props) {
 
     try {
       let text = "";
+      let encoding: string | undefined;
 
       if (isText) {
-        text = await file.text();
+        const parsedTxt = await parseTxt(file);
+        encoding = parsedTxt.encoding;
+        text = cleanText(parsedTxt.text, { reflowHardWrappedLines: true });
       } else if (isEpub) {
-        text = await parseEpub(file);
+        text = cleanText(await parseEpub(file), { reflowHardWrappedLines: false });
       }
 
       if (!text.trim()) {
         throw new Error("File appears to be empty");
       }
 
-      sessionStorage.setItem("nocturne_content", text);
-      sessionStorage.setItem("nocturne_filename", file.name);
+      await saveActiveDocument({
+        content: text,
+        filename: file.name,
+        format: isText ? "txt" : "epub",
+        encoding,
+      });
 
       router.push("/reader");
     } catch (error) {
@@ -52,9 +70,17 @@ export default function FileUpload({ compact = false }: Props) {
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to read file"
       );
-      setTimeout(() => setState("idle"), 3000);
+      scheduleReset();
     }
-  };
+  }, [router, scheduleReset]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -89,7 +115,7 @@ export default function FileUpload({ compact = false }: Props) {
     if (file) {
       processFile(file);
     }
-  }, []);
+  }, [processFile]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

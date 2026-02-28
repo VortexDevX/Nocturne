@@ -2,6 +2,7 @@ import FileUpload from "@/components/FileUpload";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import Notes from "@/components/Notes";
 import InstallPWA from "@/components/InstallPWA";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -12,7 +13,7 @@ export default function Home() {
           {/* Header */}
           <header className="text-center animate-fade-in-up">
             <div className="inline-flex items-center justify-center w-17 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
-              <img src="./logo.png" alt="Nocturne" />
+              <Image src="/logo.png" alt="Nocturne" width={68} height={68} priority />
             </div>
 
             <h1 className="text-2xl font-semibold tracking-tight mb-1">

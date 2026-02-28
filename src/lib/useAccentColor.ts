@@ -11,9 +11,13 @@ import {
 
 const EVENT_KEY = "nocturne_accent_change";
 
+function getInitialAccent(): AccentColor {
+  if (typeof window === "undefined") return ACCENT_COLORS[0];
+  return loadAccentColor();
+}
+
 export function useAccentColor() {
-  const [accent, setAccentState] = useState<AccentColor>(ACCENT_COLORS[0]);
-  const [mounted, setMounted] = useState(false);
+  const [accent, setAccentState] = useState<AccentColor>(getInitialAccent);
 
   const setAccent = useCallback((color: AccentColor) => {
     setAccentState(color);
@@ -24,10 +28,7 @@ export function useAccentColor() {
   }, []);
 
   useEffect(() => {
-    const saved = loadAccentColor();
-    setAccentState(saved);
-    applyAccentColor(saved);
-    setMounted(true);
+    applyAccentColor(accent);
 
     const handleSync = (e: Event) => {
       const customEvent = e as CustomEvent<AccentColor>;
@@ -39,7 +40,7 @@ export function useAccentColor() {
 
     window.addEventListener(EVENT_KEY, handleSync);
     return () => window.removeEventListener(EVENT_KEY, handleSync);
-  }, []);
+  }, [accent]);
 
-  return { accent, setAccent, mounted };
+  return { accent, setAccent };
 }

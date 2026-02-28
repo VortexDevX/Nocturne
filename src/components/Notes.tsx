@@ -9,27 +9,26 @@ type Props = {
 };
 
 export default function Notes({ compact = false }: Props) {
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(STORAGE_KEY) || "";
+  });
   const [saved, setSaved] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) setNote(saved);
-  }, []);
-
-  useEffect(() => {
-    setSaved(false);
+    if (saved) return;
     const timeout = setTimeout(() => {
       localStorage.setItem(STORAGE_KEY, note);
       setSaved(true);
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [note]);
+  }, [note, saved]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setNote(e.target.value);
+      setSaved(false);
     },
     []
   );
@@ -38,6 +37,7 @@ export default function Notes({ compact = false }: Props) {
     <div className={compact ? "space-y-2" : "space-y-3"}>
       <div className="flex items-center justify-between">
         <label
+          htmlFor="notes-input"
           className={`${
             compact ? "text-lg" : "text-m"
           } font-medium text-(--muted)`}
@@ -55,6 +55,7 @@ export default function Notes({ compact = false }: Props) {
       </div>
 
       <textarea
+        id="notes-input"
         value={note}
         onChange={handleChange}
         rows={compact ? 2 : 5}

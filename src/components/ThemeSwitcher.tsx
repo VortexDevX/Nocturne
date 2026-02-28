@@ -12,18 +12,7 @@ const THEMES: { key: ThemeName; label: string; bg: string }[] = [
 ];
 
 export default function ThemeSwitcher() {
-  const { theme, setTheme, mounted } = useTheme();
-
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="flex items-center gap-2">
-        {THEMES.map((t) => (
-          <div key={t.key} className="w-7 h-7 rounded-full skeleton" />
-        ))}
-      </div>
-    );
-  }
+  const { theme, setTheme } = useTheme();
 
   return (
     <div

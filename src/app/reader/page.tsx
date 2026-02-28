@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import Reader from "@/components/Reader";
 import Settings from "@/components/Settings";
@@ -17,68 +23,94 @@ import {
   SearchIcon,
 } from "@/components/Icons";
 import { useScrollDirection } from "@/lib/useScrollDirection";
-import { processContent, countMatches } from "@/lib/textProcessor";
+import {
+  processContent,
+  countMatches,
+  SearchOptions,
+} from "@/lib/textProcessor";
 import {
   loadSettings,
   saveSettings,
   ReaderSettings,
 } from "@/lib/readerSettings";
+import {
+  clearActiveDocument,
+  getActiveDocument,
+  ActiveDocument,
+} from "@/lib/sessionDocumentStore";
 
 export default function ReaderPage() {
   const router = useRouter();
-  const [content, setContent] = useState("");
-  const [filename, setFilename] = useState("");
+  const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(
+    null
+  );
+  const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [settings, setSettings] = useState<ReaderSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const hasSavedSettings = useRef(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [searchOptions, setSearchOptions] = useState<SearchOptions>({
+    caseSensitive: false,
+    wholeWord: false,
+  });
 
   // Auto-hide header
   const { direction, isAtTop } = useScrollDirection(10);
-  const [headerVisible, setHeaderVisible] = useState(true);
+  const headerVisible =
+    showSettings || showSearch || isAtTop || direction !== "down";
+
+  const content = activeDocument?.content ?? "";
+  const filename = activeDocument?.filename ?? "Untitled";
+  const shouldReflow =
+    settings.reflowMode === "book" && activeDocument?.format !== "epub";
 
   // Process content once (same as Reader uses)
-  const paragraphs = useMemo(() => processContent(content), [content]);
+  const paragraphs = useMemo(
+    () =>
+      processContent(content, {
+        reflowHardWrappedLines: shouldReflow,
+      }),
+    [content, shouldReflow]
+  );
 
   // Calculate total matches using same processed text
   const totalMatches = useMemo(
-    () => countMatches(paragraphs, searchQuery),
-    [paragraphs, searchQuery]
+    () => countMatches(paragraphs, searchQuery, searchOptions),
+    [paragraphs, searchQuery, searchOptions]
   );
 
-  // Update header visibility
   useEffect(() => {
-    if (showSettings || showSearch) {
-      setHeaderVisible(true);
-    } else if (isAtTop) {
-      setHeaderVisible(true);
-    } else if (direction === "down") {
-      setHeaderVisible(false);
-    } else if (direction === "up") {
-      setHeaderVisible(true);
-    }
-  }, [direction, isAtTop, showSettings, showSearch]);
+    let isMounted = true;
 
-  useEffect(() => {
-    const savedContent = sessionStorage.getItem("nocturne_content");
-    const savedFilename = sessionStorage.getItem("nocturne_filename");
+    void getActiveDocument()
+      .then((document) => {
+        if (isMounted) {
+          setActiveDocument(document);
+          setIsLoadingDocument(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsLoadingDocument(false);
+        }
+      });
 
-    if (savedContent) {
-      setContent(savedContent);
-      setFilename(savedFilename || "Untitled");
-    }
-    setMounted(true);
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (mounted) {
-      saveSettings(settings);
+    if (!hasSavedSettings.current) {
+      hasSavedSettings.current = true;
+      return;
     }
-  }, [settings, mounted]);
+    saveSettings(settings);
+  }, [settings]);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -94,9 +126,9 @@ export default function ReaderPage() {
   }, []);
 
   const handleBack = useCallback(() => {
-    sessionStorage.removeItem("nocturne_content");
-    sessionStorage.removeItem("nocturne_filename");
-    router.push("/");
+    void clearActiveDocument().finally(() => {
+      router.push("/");
+    });
   }, [router]);
 
   const handleRefresh = useCallback(async () => {
@@ -112,15 +144,23 @@ export default function ReaderPage() {
     setShowSearch(false);
     setSearchQuery("");
     setCurrentMatchIndex(0);
+    setSearchOptions({
+      caseSensitive: false,
+      wholeWord: false,
+    });
   }, []);
 
-  const handleSearch = useCallback((query: string, currentIndex: number) => {
-    setSearchQuery(query);
-    setCurrentMatchIndex(currentIndex);
-  }, []);
+  const handleSearch = useCallback(
+    (query: string, currentIndex: number, options: SearchOptions) => {
+      setSearchOptions(options);
+      setSearchQuery(query);
+      setCurrentMatchIndex(currentIndex);
+    },
+    []
+  );
 
   // Loading state
-  if (!mounted) {
+  if (isLoadingDocument) {
     return (
       <main className="min-h-screen page-fade overflow-x-hidden">
         <header className="border-b border-(--border)">
@@ -237,8 +277,8 @@ export default function ReaderPage() {
       <SearchBar
         isOpen={showSearch}
         onClose={closeSearch}
-        content={content}
         onSearch={handleSearch}
+        options={searchOptions}
         totalMatches={totalMatches}
       />
 
@@ -249,12 +289,17 @@ export default function ReaderPage() {
           <main className="min-h-screen overflow-x-hidden">
             <div style={{ height: "56px" }} aria-hidden="true" />
 
-            <div className="max-w-reader mx-auto px-5 pb-20 overflow-x-hidden">
+            <div
+              className="mx-auto px-5 pb-20 overflow-x-hidden"
+              style={{ maxWidth: `${settings.contentWidth}px` }}
+            >
               <Reader
                 content={content}
+                paragraphs={paragraphs}
                 settings={settings}
                 searchQuery={searchQuery}
                 currentMatchIndex={currentMatchIndex}
+                searchOptions={searchOptions}
               />
             </div>
 

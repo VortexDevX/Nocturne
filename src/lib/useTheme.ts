@@ -1,23 +1,53 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback, useSyncExternalStore } from "react";
 import { themes, ThemeName } from "./themes";
 
 const STORAGE_KEY = "nocturne_theme";
 const EVENT_KEY = "nocturne_theme_change";
 
+function getStoredTheme(): ThemeName {
+  if (typeof window === "undefined") return "light";
+  const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
+  return saved && themes[saved] ? saved : "light";
+}
+
+function subscribeToTheme(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const handleThemeEvent = () => onStoreChange();
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener(EVENT_KEY, handleThemeEvent);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(EVENT_KEY, handleThemeEvent);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
 export function useTheme() {
-  const [theme, setThemeState] = useState<ThemeName>("light");
-  const [mounted, setMounted] = useState(false);
+  const theme = useSyncExternalStore<ThemeName>(
+    subscribeToTheme,
+    getStoredTheme,
+    (): ThemeName => "light"
+  );
 
   const applyTheme = useCallback((themeName: ThemeName) => {
     const t = themes[themeName];
     if (!t) return;
 
     const root = document.documentElement;
-    Object.entries(t).forEach(([key, value]) => {
-      root.style.setProperty(`--${key}`, value);
-    });
+    Object.entries(t)
+      .filter(([key]) => key !== "accent" && key !== "accentMuted")
+      .forEach(([key, value]) => {
+        root.style.setProperty(`--${key}`, value);
+      });
 
     root.style.setProperty(
       "color-scheme",
@@ -27,35 +57,18 @@ export function useTheme() {
 
   const setTheme = useCallback(
     (newTheme: ThemeName) => {
-      setThemeState(newTheme);
+      if (!themes[newTheme]) return;
+
       applyTheme(newTheme);
       localStorage.setItem(STORAGE_KEY, newTheme);
-      // Notify other components
       window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: newTheme }));
     },
     [applyTheme]
   );
 
   useEffect(() => {
-    // Initial load
-    const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-    const initial = saved && themes[saved] ? saved : "light";
-    setThemeState(initial);
-    applyTheme(initial);
-    setMounted(true);
+    applyTheme(theme);
+  }, [applyTheme, theme]);
 
-    // Listen for sync events
-    const handleSync = (e: Event) => {
-      const customEvent = e as CustomEvent<ThemeName>;
-      if (customEvent.detail) {
-        setThemeState(customEvent.detail);
-        applyTheme(customEvent.detail);
-      }
-    };
-
-    window.addEventListener(EVENT_KEY, handleSync);
-    return () => window.removeEventListener(EVENT_KEY, handleSync);
-  }, [applyTheme]);
-
-  return { theme, setTheme, mounted };
+  return { theme, setTheme };
 }

@@ -658,3 +658,14 @@ textarea::placeholder {
   color: var(--muted);
   max-width: 280px;
 }
+
+/* ========================================
+   READER TEXT WRAPPING
+   ======================================== */
+
+.reader-paragraph {
+  /* Keep normal words intact; only break genuinely unbreakable long tokens */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}

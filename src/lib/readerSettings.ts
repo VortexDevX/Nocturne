@@ -1,21 +1,34 @@
 export type FontFamily = "sans" | "mono" | "lexend" | "atkinson" | "opensans";
+export type ReflowMode = "book" | "original";
 
 export type ReaderSettings = {
   fontSize: number;
   lineHeight: number;
   fontFamily: FontFamily;
+  reflowMode: ReflowMode;
+  contentWidth: number;
+  paragraphSpacing: number;
+  justifiedText: boolean;
 };
 
 export const DEFAULT_SETTINGS: ReaderSettings = {
   fontSize: 18,
   lineHeight: 1.75,
   fontFamily: "sans",
+  reflowMode: "book",
+  contentWidth: 680,
+  paragraphSpacing: 1,
+  justifiedText: false,
 };
 
 export const FONT_SIZE_MIN = 14;
 export const FONT_SIZE_MAX = 28;
 export const LINE_HEIGHT_MIN = 1.4;
 export const LINE_HEIGHT_MAX = 2.2;
+export const CONTENT_WIDTH_MIN = 520;
+export const CONTENT_WIDTH_MAX = 980;
+export const PARAGRAPH_SPACING_MIN = 0.6;
+export const PARAGRAPH_SPACING_MAX = 2;
 
 export const FONT_OPTIONS: {
   value: FontFamily;

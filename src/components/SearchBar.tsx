@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { SearchOptions } from "@/lib/textProcessor";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  content: string;
-  onSearch: (query: string, currentIndex: number) => void;
+  onSearch: (query: string, currentIndex: number, options: SearchOptions) => void;
+  options: SearchOptions;
   totalMatches: number;
 };
 
 export default function SearchBar({
   isOpen,
   onClose,
-  content,
   onSearch,
+  options,
   totalMatches,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -28,48 +29,65 @@ export default function SearchBar({
     }
   }, [isOpen]);
 
-  // Reset when closed
-  useEffect(() => {
-    if (!isOpen) {
-      setQuery("");
+  const scrollToCurrentMatch = useCallback(() => {
+    window.setTimeout(() => {
+      const element = document.querySelector('[data-current-match="true"]');
+      if (element) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 50);
+  }, []);
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setQuery(value);
       setCurrentMatch(0);
-      onSearch("", 0);
-    }
-  }, [isOpen, onSearch]);
+      onSearch(value, 0, options);
+    },
+    [onSearch, options]
+  );
 
-  // Update search when query changes
-  useEffect(() => {
+  const handleClose = useCallback(() => {
+    setQuery("");
     setCurrentMatch(0);
-    onSearch(query, 0);
-  }, [query, onSearch]);
+    onSearch("", 0, options);
+    onClose();
+  }, [onClose, onSearch, options]);
 
-  // Scroll to current match when it changes
-  useEffect(() => {
-    if (totalMatches > 0) {
-      onSearch(query, currentMatch);
+  const toggleCaseSensitive = useCallback(() => {
+    const nextOptions = { ...options, caseSensitive: !options.caseSensitive };
+    setCurrentMatch(0);
+    onSearch(query, 0, nextOptions);
+  }, [onSearch, options, query]);
 
-      // Scroll to highlighted element
-      setTimeout(() => {
-        const element = document.querySelector('[data-current-match="true"]');
-        if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-      }, 50);
-    }
-  }, [currentMatch, query, onSearch, totalMatches]);
+  const toggleWholeWord = useCallback(() => {
+    const nextOptions = { ...options, wholeWord: !options.wholeWord };
+    setCurrentMatch(0);
+    onSearch(query, 0, nextOptions);
+  }, [onSearch, options, query]);
 
   const goToNext = useCallback(() => {
     if (totalMatches === 0) return;
-    setCurrentMatch((prev) => (prev + 1) % totalMatches);
-  }, [totalMatches]);
+    setCurrentMatch((prev) => {
+      const nextIndex = (prev + 1) % totalMatches;
+      onSearch(query, nextIndex, options);
+      scrollToCurrentMatch();
+      return nextIndex;
+    });
+  }, [onSearch, options, query, scrollToCurrentMatch, totalMatches]);
 
   const goToPrev = useCallback(() => {
     if (totalMatches === 0) return;
-    setCurrentMatch((prev) => (prev - 1 + totalMatches) % totalMatches);
-  }, [totalMatches]);
+    setCurrentMatch((prev) => {
+      const nextIndex = (prev - 1 + totalMatches) % totalMatches;
+      onSearch(query, nextIndex, options);
+      scrollToCurrentMatch();
+      return nextIndex;
+    });
+  }, [onSearch, options, query, scrollToCurrentMatch, totalMatches]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -78,7 +96,7 @@ export default function SearchBar({
 
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleClose();
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (e.shiftKey) {
@@ -91,7 +109,7 @@ export default function SearchBar({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, goToNext, goToPrev, onClose]);
+  }, [isOpen, goToNext, goToPrev, handleClose]);
 
   if (!isOpen) return null;
 
@@ -132,7 +150,7 @@ export default function SearchBar({
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder="Search in document..."
           className="
             flex-1
@@ -143,6 +161,28 @@ export default function SearchBar({
             focus:outline-none
           "
         />
+        <button
+          onClick={toggleCaseSensitive}
+          className={`px-2 py-1 rounded-md text-xs border transition-colors ${
+            options.caseSensitive
+              ? "border-(--accent) text-(--accent)"
+              : "border-(--border) text-(--muted) hover:border-(--muted)"
+          }`}
+          aria-label="Toggle case sensitive"
+        >
+          Aa
+        </button>
+        <button
+          onClick={toggleWholeWord}
+          className={`px-2 py-1 rounded-md text-xs border transition-colors ${
+            options.wholeWord
+              ? "border-(--accent) text-(--accent)"
+              : "border-(--border) text-(--muted) hover:border-(--muted)"
+          }`}
+          aria-label="Toggle whole word"
+        >
+          W
+        </button>
 
         {/* Results count */}
         {query.length >= 2 && (
@@ -197,7 +237,7 @@ export default function SearchBar({
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-1.5 rounded-lg hover:bg-(--border) transition-colors"
           aria-label="Close search"
         >

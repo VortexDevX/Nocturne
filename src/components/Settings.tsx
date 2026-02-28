@@ -8,6 +8,10 @@ import {
   FONT_SIZE_MAX,
   LINE_HEIGHT_MIN,
   LINE_HEIGHT_MAX,
+  CONTENT_WIDTH_MIN,
+  CONTENT_WIDTH_MAX,
+  PARAGRAPH_SPACING_MIN,
+  PARAGRAPH_SPACING_MAX,
 } from "@/lib/readerSettings";
 import { ThemeName } from "@/lib/themes";
 import { useTheme } from "@/lib/useTheme";
@@ -170,6 +174,35 @@ export default function Settings({ settings, onChange }: Props) {
         </div>
       </section>
 
+      {/* Reflow Mode */}
+      <section>
+        <label className="block text-sm font-medium text-(--muted) mb-3">
+          Text Flow
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => updateSetting("reflowMode", "book")}
+            className={`py-2.5 px-3 rounded-xl border text-sm transition-all ${
+              settings.reflowMode === "book"
+                ? "bg-(--accent) text-white border-(--accent)"
+                : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
+            }`}
+          >
+            Book Reflow
+          </button>
+          <button
+            onClick={() => updateSetting("reflowMode", "original")}
+            className={`py-2.5 px-3 rounded-xl border text-sm transition-all ${
+              settings.reflowMode === "original"
+                ? "bg-(--accent) text-white border-(--accent)"
+                : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
+            }`}
+          >
+            Original Lines
+          </button>
+        </div>
+      </section>
+
       {/* Font Size */}
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -258,6 +291,74 @@ export default function Settings({ settings, onChange }: Props) {
             <line x1="4" y1="21" x2="20" y2="21" />
           </svg>
         </div>
+      </section>
+
+      {/* Content Width */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-(--muted)">Width</label>
+          <span className="text-sm text-(--text) tabular-nums">
+            {settings.contentWidth}px
+          </span>
+        </div>
+        <input
+          type="range"
+          min={CONTENT_WIDTH_MIN}
+          max={CONTENT_WIDTH_MAX}
+          step={10}
+          value={settings.contentWidth}
+          onChange={(e) => updateSetting("contentWidth", Number(e.target.value))}
+          className="w-full"
+          aria-label="Reader content width"
+        />
+      </section>
+
+      {/* Paragraph Spacing */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-(--muted)">
+            Paragraph Gap
+          </label>
+          <span className="text-sm text-(--text) tabular-nums">
+            {settings.paragraphSpacing.toFixed(1)}em
+          </span>
+        </div>
+        <input
+          type="range"
+          min={PARAGRAPH_SPACING_MIN}
+          max={PARAGRAPH_SPACING_MAX}
+          step={0.1}
+          value={settings.paragraphSpacing}
+          onChange={(e) =>
+            updateSetting("paragraphSpacing", Number(e.target.value))
+          }
+          className="w-full"
+          aria-label="Paragraph spacing"
+        />
+      </section>
+
+      {/* Text Alignment */}
+      <section>
+        <label className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-(--muted)">
+            Justified Text
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.justifiedText}
+            onClick={() => updateSetting("justifiedText", !settings.justifiedText)}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+              settings.justifiedText ? "bg-(--accent)" : "bg-(--border)"
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                settings.justifiedText ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </label>
       </section>
     </div>
   );

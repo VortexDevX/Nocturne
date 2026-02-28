@@ -3,17 +3,22 @@
 import { useEffect, useState } from "react";
 
 export default function OfflineIndicator() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => {
+    if (typeof navigator === "undefined") return false;
+    return !navigator.onLine;
+  });
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Check initial state
-    setIsOffline(!navigator.onLine);
+    let hideTimeout: number | null = null;
 
     const handleOnline = () => {
       setIsOffline(false);
       setShowBanner(true);
-      setTimeout(() => setShowBanner(false), 3000);
+      if (hideTimeout) {
+        window.clearTimeout(hideTimeout);
+      }
+      hideTimeout = window.setTimeout(() => setShowBanner(false), 3000);
     };
 
     const handleOffline = () => {
@@ -25,6 +30,9 @@ export default function OfflineIndicator() {
     window.addEventListener("offline", handleOffline);
 
     return () => {
+      if (hideTimeout) {
+        window.clearTimeout(hideTimeout);
+      }
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
@@ -65,7 +73,7 @@ export default function OfflineIndicator() {
               <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
               <line x1="12" y1="20" x2="12.01" y2="20" />
             </svg>
-            <span>You're offline</span>
+            <span>You&apos;re offline</span>
           </>
         ) : (
           <>
