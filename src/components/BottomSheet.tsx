@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
 type Props = {
   isOpen: boolean;
@@ -15,94 +15,123 @@ export default function BottomSheet({
   title,
   children,
 }: Props) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     },
-    [onClose]
+    [onClose],
   );
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleEscape);
+      setTimeout(() => sheetRef.current?.focus(), 50);
     } else {
       document.body.style.overflow = "";
     }
-
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, handleEscape]);
 
-  if (!isOpen) return null;
-
   return (
     <>
       {/* Backdrop */}
       <div
-        className={`
-          fixed inset-0 z-40
-          bg-black/40
-          transition-opacity duration-300
-          ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
-        `}
-        onClick={onClose}
         aria-hidden="true"
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 40,
+          background: "rgba(0,0,0,0.6)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none",
+          transition: "opacity 280ms ease",
+        }}
       />
 
       {/* Sheet */}
       <div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`
-          fixed z-50
-          bottom-0 left-0 right-0
-          w-full max-w-full
-          bg-(--surface)
-          border-t border-(--border)
-          rounded-t-3xl
-          max-h-[85vh]
-          overflow-hidden
-          transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
-          ${isOpen ? "translate-y-0" : "translate-y-full"}
-        `}
+        tabIndex={-1}
+        className="bottom-sheet"
         style={{
-          /* Prevent any width changes */
-          width: "100vw",
-          maxWidth: "100vw",
-          overflowX: "hidden",
+          transform: isOpen ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 340ms cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-(--border)" />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "12px 0 8px",
+          }}
+        >
+          <div
+            style={{
+              width: "36px",
+              height: "4px",
+              borderRadius: "2px",
+              background: "var(--border)",
+            }}
+          />
         </div>
 
-        {/* Header */}
+        {/* Title */}
         {title && (
-          <div className="px-6 pb-4 border-b border-(--border)">
-            <h2 className="text-lg font-semibold text-center">{title}</h2>
+          <div
+            style={{
+              padding: "4px 20px 14px",
+              borderBottom: "1px solid var(--border-subtle)",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "15px",
+                fontWeight: 600,
+                color: "var(--text)",
+              }}
+            >
+              {title}
+            </h2>
           </div>
         )}
 
-        {/* Content - constrained */}
+        {/* Content */}
         <div
-          className="overflow-y-auto overflow-x-hidden"
           style={{
-            maxHeight: "calc(85vh - 80px)",
+            overflowY: "auto",
             overflowX: "hidden",
+            maxHeight: "calc(88vh - 68px)",
           }}
         >
-          <div className="px-6 py-6 w-full max-w-md mx-auto">{children}</div>
+          <div
+            style={{
+              padding: "20px",
+              // overflow visible so sliders aren't clipped
+              overflow: "visible",
+              width: "100%",
+              maxWidth: "480px",
+              margin: "0 auto",
+            }}
+          >
+            {children}
+          </div>
         </div>
 
-        {/* Safe area padding for iOS */}
-        <div className="h-[env(safe-area-inset-bottom)]" />
+        <div style={{ height: "env(safe-area-inset-bottom)" }} />
       </div>
     </>
   );

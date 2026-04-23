@@ -15,7 +15,10 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function createSearchRegex(query: string, options: SearchOptions = {}): RegExp | null {
+function createSearchRegex(
+  query: string,
+  options: SearchOptions = {},
+): RegExp | null {
   if (!query || query.length < 2) return null;
 
   const escapedQuery = escapeRegex(query);
@@ -29,7 +32,7 @@ function createSearchRegex(query: string, options: SearchOptions = {}): RegExp |
 function collectMatches(
   paragraphs: string[],
   query: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): MatchRange[] {
   const regex = createSearchRegex(query, options);
   if (!regex) return [];
@@ -62,15 +65,12 @@ function collectMatches(
 
 export function processContent(
   content: string,
-  options: ContentProcessingOptions = {}
+  options: ContentProcessingOptions = {},
 ): string[] {
   if (!content) return [];
 
-  const normalized = cleanText(content, {
-    reflowHardWrappedLines: options.reflowHardWrappedLines ?? true,
-  });
-
-  return normalized
+  // Content is already cleaned when saved - just split into paragraphs
+  return content
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
@@ -79,7 +79,7 @@ export function processContent(
 export function countMatches(
   paragraphs: string[],
   query: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): number {
   return collectMatches(paragraphs, query, options).length;
 }
@@ -87,7 +87,7 @@ export function countMatches(
 export function getMatchIndices(
   paragraphs: string[],
   query: string,
-  options: SearchOptions = {}
+  options: SearchOptions = {},
 ): MatchRange[] {
   return collectMatches(paragraphs, query, options);
 }

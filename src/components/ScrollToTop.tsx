@@ -1,49 +1,61 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 export default function ScrollToTop() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    let rafId: number | null = null;
+
     const handleScroll = () => {
-      setVisible(window.scrollY > 400);
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        setVisible(window.scrollY > window.innerHeight * 0.6);
+        rafId = null;
+      });
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
-  const scrollToTop = useCallback(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }, []);
+  if (!visible) return null;
 
   return (
     <button
-      onClick={scrollToTop}
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Scroll to top"
-      className={`
-        fixed bottom-6 right-6 z-40
-        w-12 h-12
-        flex items-center justify-center
-        bg-(--accent) text-white
-        rounded-full shadow-lg
-        transition-all duration-300 ease-out
-        hover:scale-110 active:scale-95
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2
-        ${
-          visible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4 pointer-events-none"
-        }
-      `}
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "20px",
+        zIndex: 90,
+        width: "40px",
+        height: "40px",
+        borderRadius: "50%",
+        background: "var(--elevated)",
+        border: "1px solid var(--border)",
+        color: "var(--text-secondary)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3)",
+        transition: "all 180ms ease",
+        outline: "none",
+        animation: "scaleIn 200ms ease forwards",
+      }}
+      onPointerDown={(e) => (e.currentTarget.style.transform = "scale(0.9)")}
+      onPointerUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      onPointerLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
       <svg
-        width="20"
-        height="20"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

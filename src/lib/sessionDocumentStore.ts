@@ -11,14 +11,12 @@ export type ActiveDocument = {
 
 type StoredDocument = ActiveDocument & {
   id: "active";
-  sessionId: string;
-  updatedAt: number;
+  savedAt: number;
 };
 
-const DB_NAME = "nocturne_temp_reader";
+const DB_NAME = "nocturne_reader";
 const STORE_NAME = "documents";
 const ACTIVE_ID = "active";
-const SESSION_KEY = "nocturne_session_id";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -26,7 +24,7 @@ function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -40,30 +38,6 @@ function openDb(): Promise<IDBDatabase> {
   });
 
   return dbPromise;
-}
-
-function createSessionId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function getSessionIdFromStorage(): string | null {
-  try {
-    return sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function setSessionIdInStorage(sessionId: string) {
-  try {
-    sessionStorage.setItem(SESSION_KEY, sessionId);
-  } catch {
-    // Ignore storage exceptions in restrictive browsing environments.
-  }
 }
 
 function runTransaction<T>(
@@ -82,37 +56,14 @@ function runTransaction<T>(
   });
 }
 
-async function purgeOtherSessions(activeSessionId: string): Promise<void> {
+export async function saveActiveDocument(
+  document: ActiveDocument
+): Promise<void> {
   const db = await openDb();
-  const record = await runTransaction<StoredDocument | undefined>(
-    db,
-    "readonly",
-    (store) => store.get(ACTIVE_ID)
-  );
-
-  if (!record || record.sessionId === activeSessionId) return;
-
-  await runTransaction(db, "readwrite", (store) => store.delete(ACTIVE_ID));
-}
-
-async function ensureSessionId(): Promise<string> {
-  const existing = getSessionIdFromStorage();
-  if (existing) return existing;
-
-  const next = createSessionId();
-  setSessionIdInStorage(next);
-  await purgeOtherSessions(next);
-  return next;
-}
-
-export async function saveActiveDocument(document: ActiveDocument): Promise<void> {
-  const db = await openDb();
-  const sessionId = await ensureSessionId();
 
   const payload: StoredDocument = {
     id: ACTIVE_ID,
-    sessionId,
-    updatedAt: Date.now(),
+    savedAt: Date.now(),
     ...document,
   };
 
@@ -121,7 +72,7 @@ export async function saveActiveDocument(document: ActiveDocument): Promise<void
 
 export async function getActiveDocument(): Promise<ActiveDocument | null> {
   const db = await openDb();
-  const sessionId = await ensureSessionId();
+
   const record = await runTransaction<StoredDocument | undefined>(
     db,
     "readonly",
@@ -129,10 +80,6 @@ export async function getActiveDocument(): Promise<ActiveDocument | null> {
   );
 
   if (!record) return null;
-  if (record.sessionId !== sessionId) {
-    await runTransaction(db, "readwrite", (store) => store.delete(ACTIVE_ID));
-    return null;
-  }
 
   return {
     content: record.content,

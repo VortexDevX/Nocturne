@@ -24,341 +24,444 @@ type Props = {
   onChange: (settings: ReaderSettings) => void;
 };
 
-const THEMES: { key: ThemeName; label: string; bg: string }[] = [
-  { key: "light", label: "Light", bg: "#fafafa" },
-  { key: "dark", label: "Dark", bg: "#0a0a0a" },
-  { key: "sepia", label: "Sepia", bg: "#f5f0e6" },
-  { key: "amoled", label: "AMOLED", bg: "#000000" },
+const THEMES: { key: ThemeName; label: string; bg: string; text: string }[] = [
+  { key: "dark", label: "Dark", bg: "#161616", text: "#ebebeb" },
+  { key: "sepia", label: "Sepia", bg: "#f0e8d4", text: "#2c2218" },
+  { key: "amoled", label: "AMOLED", bg: "#000000", text: "#e8e8e8" },
 ];
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontSize: "10px",
+        fontWeight: 700,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: "var(--muted)",
+        marginBottom: "16px",
+        paddingBottom: "8px",
+        borderBottom: "1px solid var(--border-subtle)",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Row({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "10px",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "13px",
+            color: "var(--text-secondary, #a0a0a0)",
+          }}
+        >
+          {label}
+        </span>
+        {value && (
+          <span
+            style={{
+              fontSize: "12px",
+              color: "var(--text, #ebebeb)",
+              fontVariantNumeric: "tabular-nums",
+              background: "var(--elevated, #1e1e1e)",
+              padding: "2px 8px",
+              borderRadius: "6px",
+              border: "1px solid var(--border, #272727)",
+            }}
+          >
+            {value}
+          </span>
+        )}
+      </div>
+      {/* overflow visible so thumb box-shadow isn't clipped */}
+      <div style={{ padding: "6px 2px", margin: "0 -2px" }}>{children}</div>
+    </div>
+  );
+}
 
 export default function Settings({ settings, onChange }: Props) {
   const { theme, setTheme } = useTheme();
   const { accent, setAccent } = useAccentColor();
 
-  const updateSetting = <K extends keyof ReaderSettings>(
+  const update = <K extends keyof ReaderSettings>(
     key: K,
-    value: ReaderSettings[K]
-  ) => {
-    onChange({ ...settings, [key]: value });
-  };
+    value: ReaderSettings[K],
+  ) => onChange({ ...settings, [key]: value });
 
   return (
-    <div className="space-y-8 w-full overflow-hidden">
-      {/* Theme Selection */}
-      <section>
-        <label className="block text-sm font-medium text-(--muted) mb-4">
-          Theme
-        </label>
-        <div className="flex items-center justify-center gap-4">
-          {THEMES.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTheme(t.key)}
-              aria-label={t.label}
-              aria-pressed={theme === t.key}
-              className={`
-                relative w-11 h-11 rounded-full shrink-0
-                transition-transform duration-200
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2
-                ${
-                  theme === t.key
-                    ? "scale-110"
-                    : "hover:scale-105 active:scale-95"
-                }
-              `}
-              style={{ backgroundColor: t.bg }}
-            >
-              <span
-                className="absolute inset-0 rounded-full ring-1 ring-inset ring-black/20"
-                aria-hidden="true"
-              />
-              <span
-                className="absolute inset-0 rounded-full ring-1 ring-white/20"
-                aria-hidden="true"
-              />
+    <div style={{ width: "100%" }}>
+      {/* ── APPEARANCE ── */}
+      <section style={{ marginBottom: "28px" }}>
+        <SectionLabel>Appearance</SectionLabel>
 
-              {theme === t.key && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <CheckIcon
-                    size={18}
-                    className={
-                      t.key === "light" || t.key === "sepia"
-                        ? "text-black/70"
-                        : "text-white/90"
-                    }
-                  />
-                </span>
-              )}
-
-              {theme === t.key && (
-                <span
-                  className="absolute -inset-1 rounded-full ring-2 ring-(--accent)"
-                  aria-hidden="true"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-(--muted) text-center mt-3">
-          {THEMES.find((t) => t.key === theme)?.label}
-        </p>
-      </section>
-
-      {/* Accent Color */}
-      <section>
-        <label className="block text-sm font-medium text-(--muted) mb-4">
-          Accent Color
-        </label>
-        <div className="flex items-center justify-center flex-wrap gap-3">
-          {ACCENT_COLORS.map((color) => (
-            <button
-              key={color.value}
-              onClick={() => setAccent(color)}
-              aria-label={color.name}
-              aria-pressed={accent.value === color.value}
-              className={`
-                relative w-9 h-9 rounded-full shrink-0
-                transition-transform duration-200
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-                ${
-                  accent.value === color.value
-                    ? "scale-110"
-                    : "hover:scale-105 active:scale-95"
-                }
-              `}
-              style={{
-                backgroundColor: color.value,
-                boxShadow:
-                  accent.value === color.value
-                    ? `0 0 0 2px var(--bg), 0 0 0 4px ${color.value}`
-                    : undefined,
-              }}
-            >
-              {accent.value === color.value && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <CheckIcon size={16} className="text-white drop-shadow-sm" />
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-(--muted) text-center mt-3">{accent.name}</p>
-      </section>
-
-      {/* Font Family - Flat List */}
-      <section>
-        <label className="block text-sm font-medium text-(--muted) mb-3">
-          Font
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {FONT_OPTIONS.map((font) => (
-            <button
-              key={font.value}
-              onClick={() => updateSetting("fontFamily", font.value)}
-              className={`
-                py-2 px-3 rounded-xl
-                text-sm
-                border transition-all duration-200
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)
-                ${
-                  settings.fontFamily === font.value
-                    ? "bg-(--accent) text-white border-(--accent)"
-                    : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
-                }
-              `}
-              style={{ fontFamily: FONT_STACKS[font.value] }}
-            >
-              {font.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Reflow Mode */}
-      <section>
-        <label className="block text-sm font-medium text-(--muted) mb-3">
-          Text Flow
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => updateSetting("reflowMode", "book")}
-            className={`py-2.5 px-3 rounded-xl border text-sm transition-all ${
-              settings.reflowMode === "book"
-                ? "bg-(--accent) text-white border-(--accent)"
-                : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
-            }`}
-          >
-            Book Reflow
-          </button>
-          <button
-            onClick={() => updateSetting("reflowMode", "original")}
-            className={`py-2.5 px-3 rounded-xl border text-sm transition-all ${
-              settings.reflowMode === "original"
-                ? "bg-(--accent) text-white border-(--accent)"
-                : "bg-(--bg) text-(--text) border-(--border) hover:border-(--muted)"
-            }`}
-          >
-            Original Lines
-          </button>
-        </div>
-      </section>
-
-      {/* Font Size */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-(--muted)">Size</label>
-          <span
-            className="text-sm text-(--text) text-right"
+        {/* Theme - actual colored tiles */}
+        <div style={{ marginBottom: "20px" }}>
+          <p
             style={{
-              fontFamily: "ui-monospace, monospace",
-              minWidth: "48px",
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+              marginBottom: "10px",
             }}
           >
-            {settings.fontSize}px
-          </span>
+            Theme
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: "8px",
+            }}
+          >
+            {THEMES.map((t) => {
+              const isActive = theme === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTheme(t.key)}
+                  aria-label={t.label}
+                  aria-pressed={isActive}
+                  style={{
+                    padding: "12px 8px",
+                    borderRadius: "var(--radius-md)",
+                    background: t.bg,
+                    border: `2px solid ${isActive ? "var(--accent)" : "transparent"}`,
+                    color: t.text,
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 180ms ease",
+                    boxShadow: isActive
+                      ? "0 0 0 1px var(--accent)"
+                      : "0 1px 3px rgba(0,0,0,0.3)",
+                    position: "relative",
+                    outline: "none",
+                  }}
+                >
+                  {t.label}
+                  {isActive && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "4px",
+                        right: "4px",
+                        color: t.text,
+                        opacity: 0.7,
+                      }}
+                    >
+                      <CheckIcon size={10} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-(--muted) shrink-0 w-4 text-center">
-            A
-          </span>
+
+        {/* Accent */}
+        <div style={{ marginBottom: "4px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "10px",
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              Accent
+            </p>
+            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+              {accent.name}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {ACCENT_COLORS.map((color) => {
+              const isActive = accent.value === color.value;
+              return (
+                <button
+                  key={color.value}
+                  onClick={() => setAccent(color)}
+                  aria-label={color.name}
+                  aria-pressed={isActive}
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    backgroundColor: color.value,
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 180ms ease",
+                    transform: isActive ? "scale(1.18)" : "scale(1)",
+                    boxShadow: isActive
+                      ? `0 0 0 2px var(--bg), 0 0 0 4px ${color.value}`
+                      : "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    outline: "none",
+                    flexShrink: 0,
+                  }}
+                >
+                  {isActive && (
+                    <span style={{ color: "#fff" }}>
+                      <CheckIcon size={12} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TYPOGRAPHY ── */}
+      <section style={{ marginBottom: "28px" }}>
+        <SectionLabel>Typography</SectionLabel>
+
+        {/* Font - uniform grid */}
+        <div style={{ marginBottom: "20px" }}>
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+              marginBottom: "10px",
+            }}
+          >
+            Font
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: "6px",
+            }}
+          >
+            {FONT_OPTIONS.map((font) => {
+              const isActive = settings.fontFamily === font.value;
+              return (
+                <button
+                  key={font.value}
+                  onClick={() => update("fontFamily", font.value)}
+                  style={{
+                    padding: "9px 6px",
+                    borderRadius: "var(--radius-sm)",
+                    background: isActive ? "var(--accent)" : "var(--elevated)",
+                    border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
+                    color: isActive ? "var(--bg)" : "var(--text-secondary)",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: FONT_STACKS[font.value],
+                    outline: "none",
+                    textAlign: "center",
+                  }}
+                >
+                  {font.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Row label="Size" value={`${settings.fontSize}px`}>
           <input
             type="range"
             min={FONT_SIZE_MIN}
             max={FONT_SIZE_MAX}
             step={1}
             value={settings.fontSize}
-            onChange={(e) => updateSetting("fontSize", Number(e.target.value))}
-            className="flex-1 min-w-0"
+            onChange={(e) => update("fontSize", Number(e.target.value))}
             aria-label="Font size"
-          />
-          <span className="text-base text-(--muted) shrink-0 w-4 text-center">
-            A
-          </span>
-        </div>
-      </section>
-
-      {/* Line Height */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-(--muted)">Spacing</label>
-          <span
-            className="text-sm text-(--text) text-right"
             style={{
-              fontFamily: "ui-monospace, monospace",
-              minWidth: "48px",
+              background: `linear-gradient(to right, var(--accent) ${
+                ((settings.fontSize - FONT_SIZE_MIN) /
+                  (FONT_SIZE_MAX - FONT_SIZE_MIN)) *
+                100
+              }%, var(--border) 0%)`,
             }}
-          >
-            {settings.lineHeight.toFixed(1)}
-          </span>
-        </div>
-        <div className="flex mb-1 items-center gap-3">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-(--muted) shrink-0"
-          >
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="18" x2="20" y2="18" />
-          </svg>
+          />
+        </Row>
+
+        <Row label="Line spacing" value={settings.lineHeight.toFixed(1)}>
           <input
             type="range"
             min={LINE_HEIGHT_MIN}
             max={LINE_HEIGHT_MAX}
             step={0.1}
             value={settings.lineHeight}
-            onChange={(e) =>
-              updateSetting("lineHeight", Number(e.target.value))
-            }
-            className="flex-1 min-w-0"
+            onChange={(e) => update("lineHeight", Number(e.target.value))}
             aria-label="Line spacing"
+            style={{
+              background: `linear-gradient(to right, var(--accent) ${
+                ((settings.lineHeight - LINE_HEIGHT_MIN) /
+                  (LINE_HEIGHT_MAX - LINE_HEIGHT_MIN)) *
+                100
+              }%, var(--border) 0%)`,
+            }}
           />
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-(--muted) shrink-0"
-          >
-            <line x1="4" y1="3" x2="20" y2="3" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="21" x2="20" y2="21" />
-          </svg>
-        </div>
-      </section>
+        </Row>
 
-      {/* Content Width */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-(--muted)">Width</label>
-          <span className="text-sm text-(--text) tabular-nums">
-            {settings.contentWidth}px
-          </span>
-        </div>
-        <input
-          type="range"
-          min={CONTENT_WIDTH_MIN}
-          max={CONTENT_WIDTH_MAX}
-          step={10}
-          value={settings.contentWidth}
-          onChange={(e) => updateSetting("contentWidth", Number(e.target.value))}
-          className="w-full"
-          aria-label="Reader content width"
-        />
-      </section>
+        <Row
+          label="Paragraph gap"
+          value={`${settings.paragraphSpacing.toFixed(1)}em`}
+        >
+          <input
+            type="range"
+            min={PARAGRAPH_SPACING_MIN}
+            max={PARAGRAPH_SPACING_MAX}
+            step={0.1}
+            value={settings.paragraphSpacing}
+            onChange={(e) => update("paragraphSpacing", Number(e.target.value))}
+            aria-label="Paragraph spacing"
+            style={{
+              background: `linear-gradient(to right, var(--accent) ${
+                ((settings.paragraphSpacing - PARAGRAPH_SPACING_MIN) /
+                  (PARAGRAPH_SPACING_MAX - PARAGRAPH_SPACING_MIN)) *
+                100
+              }%, var(--border) 0%)`,
+            }}
+          />
+        </Row>
 
-      {/* Paragraph Spacing */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-(--muted)">
-            Paragraph Gap
-          </label>
-          <span className="text-sm text-(--text) tabular-nums">
-            {settings.paragraphSpacing.toFixed(1)}em
-          </span>
-        </div>
-        <input
-          type="range"
-          min={PARAGRAPH_SPACING_MIN}
-          max={PARAGRAPH_SPACING_MAX}
-          step={0.1}
-          value={settings.paragraphSpacing}
-          onChange={(e) =>
-            updateSetting("paragraphSpacing", Number(e.target.value))
-          }
-          className="w-full"
-          aria-label="Paragraph spacing"
-        />
-      </section>
-
-      {/* Text Alignment */}
-      <section>
-        <label className="flex items-center justify-between gap-3">
-          <span className="text-sm font-medium text-(--muted)">
-            Justified Text
+        {/* Justified toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+            Justified text
           </span>
           <button
             type="button"
             role="switch"
             aria-checked={settings.justifiedText}
-            onClick={() => updateSetting("justifiedText", !settings.justifiedText)}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-              settings.justifiedText ? "bg-(--accent)" : "bg-(--border)"
-            }`}
+            onClick={() => update("justifiedText", !settings.justifiedText)}
+            style={{
+              position: "relative",
+              width: "44px",
+              height: "24px",
+              borderRadius: "12px",
+              background: settings.justifiedText
+                ? "var(--accent)"
+                : "var(--elevated)",
+              border: `1px solid ${
+                settings.justifiedText ? "var(--accent)" : "var(--border)"
+              }`,
+              cursor: "pointer",
+              transition: "all 200ms ease",
+              outline: "none",
+              flexShrink: 0,
+            }}
           >
             <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                settings.justifiedText ? "translate-x-6" : "translate-x-1"
-              }`}
+              style={{
+                position: "absolute",
+                top: "2px",
+                left: settings.justifiedText ? "22px" : "2px",
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                background: "#fff",
+                transition: "left 200ms var(--t-spring)",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }}
             />
           </button>
-        </label>
+        </div>
+      </section>
+
+      {/* ── LAYOUT ── */}
+      <section>
+        <SectionLabel>Layout</SectionLabel>
+
+        {/* Text flow */}
+        <div style={{ marginBottom: "20px" }}>
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+              marginBottom: "10px",
+            }}
+          >
+            Text flow
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "6px",
+            }}
+          >
+            {(["book", "original"] as const).map((mode) => {
+              const isActive = settings.reflowMode === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => update("reflowMode", mode)}
+                  style={{
+                    padding: "10px",
+                    borderRadius: "var(--radius-sm)",
+                    background: isActive ? "var(--accent)" : "var(--elevated)",
+                    border: `1px solid ${isActive ? "var(--accent)" : "var(--border)"}`,
+                    color: isActive ? "var(--bg)" : "var(--text-secondary)",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    outline: "none",
+                  }}
+                >
+                  {mode === "book" ? "Book reflow" : "Original"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content width - desktop only */}
+        <div className="hidden sm:block">
+          <Row label="Content width" value={`${settings.contentWidth}px`}>
+            <input
+              type="range"
+              min={CONTENT_WIDTH_MIN}
+              max={CONTENT_WIDTH_MAX}
+              step={10}
+              value={settings.contentWidth}
+              onChange={(e) => update("contentWidth", Number(e.target.value))}
+              aria-label="Content width"
+              style={{
+                background: `linear-gradient(to right, var(--accent) ${
+                  ((settings.contentWidth - CONTENT_WIDTH_MIN) /
+                    (CONTENT_WIDTH_MAX - CONTENT_WIDTH_MIN)) *
+                  100
+                }%, var(--border) 0%)`,
+              }}
+            />
+          </Row>
+        </div>
       </section>
     </div>
   );

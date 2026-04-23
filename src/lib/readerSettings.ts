@@ -1,4 +1,10 @@
-export type FontFamily = "sans" | "mono" | "lexend" | "atkinson" | "opensans";
+export type FontFamily =
+  | "sans"
+  | "mono"
+  | "lexend"
+  | "atkinson"
+  | "opensans";
+
 export type ReflowMode = "book" | "original";
 
 export type ReaderSettings = {
@@ -12,35 +18,33 @@ export type ReaderSettings = {
 };
 
 export const DEFAULT_SETTINGS: ReaderSettings = {
-  fontSize: 18,
-  lineHeight: 1.75,
+  fontSize: 17,
+  lineHeight: 1.8,
   fontFamily: "sans",
   reflowMode: "book",
   contentWidth: 680,
-  paragraphSpacing: 1,
+  paragraphSpacing: 1.1,
   justifiedText: false,
 };
 
 export const FONT_SIZE_MIN = 14;
-export const FONT_SIZE_MAX = 28;
+export const FONT_SIZE_MAX = 26;
 export const LINE_HEIGHT_MIN = 1.4;
 export const LINE_HEIGHT_MAX = 2.2;
 export const CONTENT_WIDTH_MIN = 520;
-export const CONTENT_WIDTH_MAX = 980;
-export const PARAGRAPH_SPACING_MIN = 0.6;
-export const PARAGRAPH_SPACING_MAX = 2;
+export const CONTENT_WIDTH_MAX = 900;
+export const PARAGRAPH_SPACING_MIN = 0.5;
+export const PARAGRAPH_SPACING_MAX = 2.0;
 
 export const FONT_OPTIONS: {
   value: FontFamily;
   label: string;
   category: string;
 }[] = [
-  // Sans fonts
   { value: "sans", label: "Inter", category: "Sans" },
   { value: "opensans", label: "Open Sans", category: "Sans" },
   { value: "lexend", label: "Lexend", category: "Sans" },
-  { value: "atkinson", label: "Atkinson", category: "Accessibility" },
-  // Mono fonts
+  { value: "atkinson", label: "Atkinson", category: "Accessible" },
   { value: "mono", label: "Fira Code", category: "Mono" },
 ];
 
@@ -67,6 +71,6 @@ export function loadSettings(): ReaderSettings {
   }
 }
 
-export function saveSettings(settings: ReaderSettings) {
+export function saveSettings(settings: ReaderSettings): void {
   localStorage.setItem(KEY, JSON.stringify(settings));
 }

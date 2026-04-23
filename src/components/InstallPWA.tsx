@@ -10,180 +10,279 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPWA() {
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const iOSStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone;
-    return window.matchMedia("(display-mode: standalone)").matches || !!iOSStandalone;
-  });
-  const [isIOS] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const iPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-    return iOS || iPadOS;
-  });
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   useEffect(() => {
-    // Listen for install prompt (Android/Desktop Chrome)
+    // Check installed
+    const iOSStandalone = (
+      window.navigator as Navigator & { standalone?: boolean }
+    ).standalone;
+    const installed =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      !!iOSStandalone;
+    setIsInstalled(installed);
+
+    // Check iOS
+    const ios =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    setIsIOS(ios);
+
+    // Check mobile - roughly
+    const mobile = window.innerWidth < 768 || ios;
+    setIsMobile(mobile);
+
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-
-    return () => {
+    return () =>
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
-    };
   }, []);
 
-  const handleInstallClick = async () => {
+  // Only render on mobile
+  if (!isMobile) return null;
+  if (isInstalled) return null;
+  if (!installPrompt && !isIOS) return null;
+
+  const handleInstall = async () => {
     if (isIOS) {
       setShowIOSGuide(true);
       return;
     }
-
     if (!installPrompt) return;
-
     await installPrompt.prompt();
     const { outcome } = await installPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      setIsInstalled(true);
-    }
+    if (outcome === "accepted") setIsInstalled(true);
     setInstallPrompt(null);
   };
-
-  // Don't show if already installed
-  if (isInstalled) return null;
-
-  // Don't show on desktop if no prompt available (likely not supported or already installed)
-  if (!installPrompt && !isIOS) return null;
 
   return (
     <>
       <button
-        onClick={handleInstallClick}
-        className="
-          w-full
-          flex items-center justify-center gap-2
-          py-3 px-4
-          bg-(--accent) text-white
-          rounded-xl
-          text-sm font-medium
-          transition-all duration-200
-          hover:opacity-90 active:scale-[0.98]
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2
-        "
+        onClick={handleInstall}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          padding: "13px 16px",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--elevated)",
+          border: "1px solid var(--border)",
+          color: "var(--text-secondary)",
+          fontSize: "14px",
+          fontWeight: 500,
+          cursor: "pointer",
+          transition: "all 180ms ease",
+          outline: "none",
+        }}
+        onPointerDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+        onPointerUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        onPointerLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
       >
+        {/* Download icon */}
         <svg
-          width="18"
-          height="18"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          style={{ color: "var(--accent)", flexShrink: 0 }}
         >
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        Install App
+        Add to Home Screen
       </button>
 
-      {/* iOS Install Guide Modal */}
+      {/* iOS Guide */}
       {showIOSGuide && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
-          onClick={() => setShowIOSGuide(false)}
-        >
+        <>
+          {/* Backdrop */}
           <div
-            className="
-              w-full max-w-md
-              bg-(--surface)
-              rounded-t-3xl
-              p-6 pb-10
-              animate-slide-up
-            "
+            aria-hidden="true"
+            onClick={() => setShowIOSGuide(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 60,
+              background: "rgba(0,0,0,0.65)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
+            }}
+          />
+
+          {/* Sheet */}
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 70,
+              background: "var(--surface)",
+              borderTop: "1px solid var(--border)",
+              borderTopLeftRadius: "var(--radius-2xl)",
+              borderTopRightRadius: "var(--radius-2xl)",
+              padding: "0 0 env(safe-area-inset-bottom)",
+              boxShadow:
+                "0 -4px 6px rgba(0,0,0,0.3), 0 -20px 60px rgba(0,0,0,0.5)",
+              animation: "slideUp 320ms cubic-bezier(0.16,1,0.3,1) forwards",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-center mb-4">
-              <div className="w-10 h-1 rounded-full bg-(--border)" />
-            </div>
-
-            <h3 className="text-lg font-semibold text-center mb-4">
-              Install Nocturne
-            </h3>
-
-            <div className="space-y-4 text-sm text-(--muted)">
-              <div className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-(--accent) text-white text-xs font-medium shrink-0">
-                  1
-                </span>
-                <p>
-                  Tap the{" "}
-                  <span className="inline-flex items-center gap-1">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-(--accent)"
-                    >
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                    <span className="font-medium text-(--text)">Share</span>
-                  </span>{" "}
-                  button in Safari
-                </p>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-(--accent) text-white text-xs font-medium shrink-0">
-                  2
-                </span>
-                <p>
-                  Scroll down and tap{" "}
-                  <span className="font-medium text-(--text)">
-                    &quot;Add to Home Screen&quot;
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-(--accent) text-white text-xs font-medium shrink-0">
-                  3
-                </span>
-                <p>
-                  Tap <span className="font-medium text-(--text)">&quot;Add&quot;</span>{" "}
-                  to install
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowIOSGuide(false)}
-              className="
-                w-full mt-6
-                py-3 px-4
-                bg-(--bg)
-                border border-(--border)
-                rounded-xl
-                text-sm font-medium
-                transition-colors duration-200
-                hover:bg-(--surface)
-              "
+            {/* Handle */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "12px 0 4px",
+              }}
             >
-              Got it
-            </button>
+              <div
+                style={{
+                  width: "36px",
+                  height: "4px",
+                  borderRadius: "2px",
+                  background: "var(--border)",
+                }}
+              />
+            </div>
+
+            <div style={{ padding: "12px 24px 28px" }}>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  color: "var(--text)",
+                  marginBottom: "24px",
+                }}
+              >
+                Install Nocturne
+              </h3>
+
+              {/* Steps */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {[
+                  {
+                    step: 1,
+                    text: (
+                      <>
+                        Tap the{" "}
+                        <span
+                          style={{ color: "var(--accent)", fontWeight: 600 }}
+                        >
+                          Share
+                        </span>{" "}
+                        button in Safari&apos;s toolbar
+                      </>
+                    ),
+                  },
+                  {
+                    step: 2,
+                    text: (
+                      <>
+                        Scroll and tap{" "}
+                        <span style={{ color: "var(--text)", fontWeight: 600 }}>
+                          &quot;Add to Home Screen&quot;
+                        </span>
+                      </>
+                    ),
+                  },
+                  {
+                    step: 3,
+                    text: (
+                      <>
+                        Tap{" "}
+                        <span style={{ color: "var(--text)", fontWeight: 600 }}>
+                          &quot;Add&quot;
+                        </span>{" "}
+                        to confirm
+                      </>
+                    ),
+                  },
+                ].map(({ step, text }) => (
+                  <div
+                    key={step}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "var(--accentMuted)",
+                        border: "1px solid var(--accent)",
+                        color: "var(--accent)",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {step}
+                    </span>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "var(--text-secondary)",
+                        lineHeight: 1.55,
+                        paddingTop: "2px",
+                      }}
+                    >
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dismiss */}
+              <button
+                onClick={() => setShowIOSGuide(false)}
+                style={{
+                  width: "100%",
+                  marginTop: "24px",
+                  padding: "13px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--elevated)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-secondary)",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  outline: "none",
+                  transition: "opacity 150ms ease",
+                }}
+              >
+                Got it
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );

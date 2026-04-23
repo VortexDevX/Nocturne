@@ -1,12 +1,10 @@
 export const ACCENT_COLORS = [
-  { name: "Blue", value: "#3b82f6", muted: "#dbeafe" },
-  { name: "Purple", value: "#8b5cf6", muted: "#ede9fe" },
-  { name: "Pink", value: "#ec4899", muted: "#fce7f3" },
-  { name: "Red", value: "#ef4444", muted: "#fee2e2" },
-  { name: "Orange", value: "#f97316", muted: "#ffedd5" },
-  { name: "Green", value: "#22c55e", muted: "#dcfce7" },
-  { name: "Teal", value: "#14b8a6", muted: "#ccfbf1" },
-  { name: "Cyan", value: "#06b6d4", muted: "#cffafe" },
+  { name: "Blue",   value: "#60a5fa", muted: "#1e3a5f" },
+  { name: "Purple", value: "#a78bfa", muted: "#2e1f5e" },
+  { name: "Pink",   value: "#f472b6", muted: "#4a1535" },
+  { name: "Amber",  value: "#fbbf24", muted: "#451a03" },
+  { name: "Green",  value: "#4ade80", muted: "#14532d" },
+  { name: "Teal",   value: "#2dd4bf", muted: "#134e4a" },
 ] as const;
 
 export type AccentColor = (typeof ACCENT_COLORS)[number];
@@ -22,17 +20,18 @@ export function loadAccentColor(): AccentColor {
   try {
     const parsed = JSON.parse(saved);
     const found = ACCENT_COLORS.find((c) => c.value === parsed.value);
-    return found || ACCENT_COLORS[0];
+    return found ?? ACCENT_COLORS[0];
   } catch {
     return ACCENT_COLORS[0];
   }
 }
 
-export function saveAccentColor(color: AccentColor) {
+export function saveAccentColor(color: AccentColor): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(color));
 }
 
-export function applyAccentColor(color: AccentColor) {
-  document.documentElement.style.setProperty("--accent", color.value);
-  document.documentElement.style.setProperty("--accentMuted", color.muted);
+export function applyAccentColor(color: AccentColor): void {
+  const root = document.documentElement;
+  root.style.setProperty("--accent", color.value);
+  root.style.setProperty("--accentMuted", color.muted);
 }

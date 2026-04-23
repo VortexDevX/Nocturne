@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Reader from "@/components/Reader";
 import Settings from "@/components/Settings";
@@ -38,17 +32,19 @@ import {
   getActiveDocument,
   ActiveDocument,
 } from "@/lib/sessionDocumentStore";
+import { saveProgress, loadProgress } from "@/lib/readingProgress";
+
+const HEADER_HEIGHT = 52;
 
 export default function ReaderPage() {
   const router = useRouter();
   const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(
-    null
+    null,
   );
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [settings, setSettings] = useState<ReaderSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const hasSavedSettings = useRef(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,52 +54,109 @@ export default function ReaderPage() {
     wholeWord: false,
   });
 
-  // Auto-hide header
+  // Refs
+  const hasSavedSettings = useRef(false);
+  const hasRestoredScroll = useRef(false);
+  const saveProgressTimer = useRef<number | null>(null);
+  const progressTextRef = useRef<HTMLParagraphElement>(null);
+
+  // Header auto-hide
   const { direction, isAtTop } = useScrollDirection(10);
   const headerVisible =
     showSettings || showSearch || isAtTop || direction !== "down";
 
   const content = activeDocument?.content ?? "";
   const filename = activeDocument?.filename ?? "Untitled";
+  const displayName = filename.replace(/\.(txt|epub)$/i, "");
   const shouldReflow =
     settings.reflowMode === "book" && activeDocument?.format !== "epub";
 
-  // Process content once (same as Reader uses)
   const paragraphs = useMemo(
     () =>
       processContent(content, {
         reflowHardWrappedLines: shouldReflow,
       }),
-    [content, shouldReflow]
+    [content, shouldReflow],
   );
 
-  // Calculate total matches using same processed text
   const totalMatches = useMemo(
     () => countMatches(paragraphs, searchQuery, searchOptions),
-    [paragraphs, searchQuery, searchOptions]
+    [paragraphs, searchQuery, searchOptions],
   );
 
+  // ── Load document ──
   useEffect(() => {
     let isMounted = true;
-
     void getActiveDocument()
-      .then((document) => {
+      .then((doc) => {
         if (isMounted) {
-          setActiveDocument(document);
+          setActiveDocument(doc);
           setIsLoadingDocument(false);
         }
       })
       .catch(() => {
-        if (isMounted) {
-          setIsLoadingDocument(false);
-        }
+        if (isMounted) setIsLoadingDocument(false);
       });
-
     return () => {
       isMounted = false;
     };
   }, []);
 
+  // ── Restore scroll position ──
+  useEffect(() => {
+    if (!filename || hasRestoredScroll.current || isLoadingDocument) return;
+    if (paragraphs.length === 0) return;
+
+    hasRestoredScroll.current = true;
+
+    const saved = loadProgress(filename);
+    if (!saved || saved.scrollPercent <= 0) return;
+
+    const timer = window.setTimeout(() => {
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const targetY = (saved.scrollPercent / 100) * docHeight;
+      window.scrollTo({ top: targetY, behavior: "instant" });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [filename, isLoadingDocument, paragraphs.length]);
+
+  // ── Auto-save scroll + update header % via DOM ref ──
+  useEffect(() => {
+    if (!filename || isLoadingDocument) return;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+
+      const percent = (scrollTop / docHeight) * 100;
+
+      // Direct DOM write - zero re-renders
+      if (progressTextRef.current) {
+        progressTextRef.current.textContent = `${Math.round(percent)}%`;
+      }
+
+      // Debounced save
+      if (saveProgressTimer.current)
+        window.clearTimeout(saveProgressTimer.current);
+
+      saveProgressTimer.current = window.setTimeout(() => {
+        saveProgress(filename, percent);
+      }, 800);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (saveProgressTimer.current)
+        window.clearTimeout(saveProgressTimer.current);
+    };
+  }, [filename, isLoadingDocument]);
+
+  // ── Save settings ──
   useEffect(() => {
     if (!hasSavedSettings.current) {
       hasSavedSettings.current = true;
@@ -112,7 +165,7 @@ export default function ReaderPage() {
     saveSettings(settings);
   }, [settings]);
 
-  // Keyboard shortcut for search
+  // ── Keyboard shortcut ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
@@ -120,34 +173,24 @@ export default function ReaderPage() {
         setShowSearch(true);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleBack = useCallback(() => {
-    void clearActiveDocument().finally(() => {
-      router.push("/");
-    });
+    void clearActiveDocument().finally(() => router.push("/"));
   }, [router]);
 
   const handleRefresh = useCallback(async () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((r) => setTimeout(r, 300));
   }, []);
-
-  const openSettings = useCallback(() => setShowSettings(true), []);
-  const closeSettings = useCallback(() => setShowSettings(false), []);
-  const openSearch = useCallback(() => setShowSearch(true), []);
 
   const closeSearch = useCallback(() => {
     setShowSearch(false);
     setSearchQuery("");
     setCurrentMatchIndex(0);
-    setSearchOptions({
-      caseSensitive: false,
-      wholeWord: false,
-    });
+    setSearchOptions({ caseSensitive: false, wholeWord: false });
   }, []);
 
   const handleSearch = useCallback(
@@ -156,48 +199,113 @@ export default function ReaderPage() {
       setSearchQuery(query);
       setCurrentMatchIndex(currentIndex);
     },
-    []
+    [],
   );
 
-  // Loading state
+  // ── Loading ──
   if (isLoadingDocument) {
     return (
-      <main className="min-h-screen page-fade overflow-x-hidden">
-        <header className="border-b border-(--border)">
-          <div className="max-w-reader mx-auto px-4">
-            <div className="flex items-center justify-between h-14">
-              <div className="w-10 h-10 skeleton rounded-xl" />
-              <div className="w-32 h-4 skeleton" />
-              <div className="w-10 h-10 skeleton rounded-xl" />
-            </div>
+      <main
+        style={{ minHeight: "100vh", overflow: "hidden" }}
+        className="page-fade"
+      >
+        <div
+          style={{
+            height: `${HEADER_HEIGHT}px`,
+            borderBottom: "1px solid var(--border-subtle)",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            gap: "12px",
+          }}
+        >
+          <div
+            className="skeleton"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "var(--radius-sm)",
+              flexShrink: 0,
+            }}
+          />
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              alignItems: "center",
+            }}
+          >
+            <div className="skeleton" style={{ width: 120, height: 12 }} />
+            <div className="skeleton" style={{ width: 32, height: 10 }} />
           </div>
-        </header>
-        <div className="max-w-reader mx-auto px-5 py-8 space-y-4">
-          <div className="h-4 skeleton w-full" />
-          <div className="h-4 skeleton w-11/12" />
-          <div className="h-4 skeleton w-full" />
-          <div className="h-4 skeleton w-9/12" />
+          <div
+            className="skeleton"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "var(--radius-sm)",
+              flexShrink: 0,
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            maxWidth: "680px",
+            margin: "0 auto",
+            padding: "32px 20px",
+          }}
+        >
+          {[100, 92, 100, 78, 100, 88, 65].map((w, i) => (
+            <div
+              key={i}
+              className="skeleton"
+              style={{
+                height: 16,
+                width: `${w}%`,
+                marginBottom: i % 3 === 2 ? 28 : 12,
+              }}
+            />
+          ))}
         </div>
       </main>
     );
   }
 
-  // No content state
+  // ── No content ──
   if (!content) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 page-enter overflow-x-hidden">
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px",
+        }}
+        className="page-enter"
+      >
         <div className="empty-state">
-          <BookOpenIcon size={64} className="empty-state-icon" />
+          <BookOpenIcon size={52} className="empty-state-icon" />
           <h2 className="empty-state-title">No content loaded</h2>
           <p className="empty-state-description">
             Upload a TXT or EPUB file from the home page to start reading
           </p>
           <button
             onClick={() => router.push("/")}
-            className="mt-6 text-button bg-(--surface) border border-(--border)"
+            className="text-button"
+            style={{
+              marginTop: "20px",
+              background: "var(--elevated)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-md)",
+            }}
           >
-            <ArrowLeftIcon size={16} />
-            Go to Home
+            <ArrowLeftIcon size={15} />
+            Go home
           </button>
         </div>
       </main>
@@ -208,72 +316,144 @@ export default function ReaderPage() {
     <>
       <ProgressBar />
 
-      {/* Header */}
+      {/* ── Header ── */}
       <header
-        id="reader-header"
         style={{
           position: "fixed",
           top: 0,
           left: 0,
           right: 0,
           zIndex: 100,
-          height: "56px",
-          backgroundColor: "var(--bg)",
-          borderBottom: "1px solid var(--border)",
+          height: `${HEADER_HEIGHT}px`,
           transform: headerVisible ? "translateY(0)" : "translateY(-100%)",
-          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "transform 0.26s cubic-bezier(0.4, 0, 0.2, 1)",
           willChange: "transform",
         }}
       >
+        {/* Solid bg layer */}
         <div
+          aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
-            backgroundColor: "var(--bg)",
-            opacity: 0.85,
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
+            background: "var(--bg)",
+            opacity: 0.92,
+          }}
+        />
+        {/* Blur layer */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+          }}
+        />
+        {/* Gradient border */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent)",
           }}
         />
 
-        <div className="max-w-reader mx-auto px-4 h-full relative z-10">
-          <div className="flex items-center justify-between h-full">
-            <button
-              onClick={handleBack}
-              className="icon-button -ml-2 shrink-0"
-              aria-label="Go back"
+        {/* Content */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            maxWidth: "680px",
+            margin: "0 auto",
+            padding: "0 12px",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
+        >
+          {/* Back */}
+          <button
+            onClick={handleBack}
+            className="icon-button"
+            aria-label="Go back"
+            style={{ marginLeft: "-4px" }}
+          >
+            <ArrowLeftIcon size={19} />
+          </button>
+
+          {/* Title + progress % */}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "2px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "100%",
+                lineHeight: 1.2,
+              }}
             >
-              <ArrowLeftIcon size={20} />
+              {displayName}
+            </p>
+            <p
+              ref={progressTextRef}
+              style={{
+                fontSize: "10px",
+                color: "var(--muted)",
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1,
+              }}
+            >
+              0%
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "2px",
+              marginRight: "-4px",
+            }}
+          >
+            <button
+              onClick={() => setShowSearch(true)}
+              className="icon-button"
+              aria-label="Search"
+            >
+              <SearchIcon size={18} />
             </button>
-
-            <div className="flex-1 mx-4 min-w-0 overflow-hidden">
-              <h1 className="text-sm font-medium truncate text-center text-(--muted)">
-                {filename.replace(/\.(txt|epub)$/i, "")}
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={openSearch}
-                className="icon-button shrink-0"
-                aria-label="Search"
-              >
-                <SearchIcon size={20} />
-              </button>
-
-              <button
-                onClick={openSettings}
-                className="icon-button -mr-2 shrink-0"
-                aria-label="Open settings"
-              >
-                <SettingsIcon size={20} />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="icon-button"
+              aria-label="Settings"
+            >
+              <SettingsIcon size={18} />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Search Bar */}
       <SearchBar
         isOpen={showSearch}
         onClose={closeSearch}
@@ -284,14 +464,17 @@ export default function ReaderPage() {
 
       <SwipeBack onBack={handleBack} />
 
-      <div className="overflow-x-hidden max-w-full">
+      <div style={{ overflowX: "hidden", maxWidth: "100vw" }}>
         <PullToRefresh onRefresh={handleRefresh}>
-          <main className="min-h-screen overflow-x-hidden">
-            <div style={{ height: "56px" }} aria-hidden="true" />
-
+          <main style={{ minHeight: "100vh", overflowX: "hidden" }}>
+            <div style={{ height: `${HEADER_HEIGHT}px` }} aria-hidden="true" />
             <div
-              className="mx-auto px-5 pb-20 overflow-x-hidden"
-              style={{ maxWidth: `${settings.contentWidth}px` }}
+              style={{
+                maxWidth: `${settings.contentWidth}px`,
+                margin: "0 auto",
+                padding: "0 20px 120px",
+                overflowX: "hidden",
+              }}
             >
               <Reader
                 content={content}
@@ -302,8 +485,6 @@ export default function ReaderPage() {
                 searchOptions={searchOptions}
               />
             </div>
-
-            <div className="h-32" />
           </main>
         </PullToRefresh>
       </div>
@@ -312,7 +493,7 @@ export default function ReaderPage() {
 
       <BottomSheet
         isOpen={showSettings}
-        onClose={closeSettings}
+        onClose={() => setShowSettings(false)}
         title="Settings"
       >
         <Settings settings={settings} onChange={setSettings} />

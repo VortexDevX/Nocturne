@@ -1,54 +1,140 @@
+import Image from "next/image";
 import FileUpload from "@/components/FileUpload";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import Notes from "@/components/Notes";
 import InstallPWA from "@/components/InstallPWA";
-import Image from "next/image";
+import ContinueReading from "@/components/ContinueReading";
 
 export default function Home() {
   return (
-    <main className="page-container page-fade">
-      {/* Content */}
-      <div className="page-content px-5 py-6">
-        <div className="w-full max-w-md space-y-6">
+    <main
+      style={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+      className="page-fade"
+    >
+      {/* Scrollable content area */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "32px 20px",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "360px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}
+        >
           {/* Header */}
-          <header className="text-center animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-17 mb-3 rounded-xl bg-(--surface) border border-(--border) overflow-hidden">
-              <Image src="/logo.png" alt="Nocturne" width={68} height={68} priority />
+          <div className="animate-fade-in-up" style={{ marginBottom: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Nocturne"
+                  width={44}
+                  height={44}
+                  priority
+                />
+              </div>
+              <div>
+                <h1
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: "var(--text)",
+                    lineHeight: 1,
+                    marginBottom: "4px",
+                  }}
+                >
+                  Nocturne
+                </h1>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--muted)",
+                    lineHeight: 1,
+                  }}
+                >
+                  Read without distraction
+                </p>
+              </div>
             </div>
+          </div>
 
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">
-              Nocturne
-            </h1>
-
-            <p className="text-(--muted) text-m">Read without distraction</p>
-          </header>
-
-          {/* Upload Area */}
+          {/* Continue Reading */}
           <div className="animate-fade-in-up stagger-1">
-            <FileUpload compact />
+            <ContinueReading />
           </div>
 
-          {/* Notes Section */}
+          {/* Upload - explicit background so it's always visible */}
           <div className="animate-fade-in-up stagger-2">
-            <div className="surface p-4">
-              <Notes compact />
-            </div>
+            <FileUpload />
           </div>
 
-          {/* Install PWA Button */}
-          <div className="animate-fade-in-up stagger-3">
+          {/* Install - mobile only */}
+          <div className="animate-fade-in-up stagger-3 sm:hidden">
             <InstallPWA />
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="page-footer px-5 py-4">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <p className="text-sm text-(--muted)">Nocturne · Offline</p>
+      <div
+        style={{
+          flexShrink: 0,
+          borderTop: "1px solid var(--border-subtle)",
+          background: "var(--bg)",
+          padding: "12px 20px",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "360px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <p style={{ fontSize: "12px", color: "var(--muted)" }}>
+            Nocturne · Offline ready
+          </p>
           <ThemeSwitcher />
         </div>
-      </footer>
+      </div>
     </main>
   );
 }
