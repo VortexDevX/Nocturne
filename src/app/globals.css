@@ -183,6 +183,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 20px;
   height: 20px;
+  margin-top: -8.5px;
   background: var(--accent);
   border-radius: 50%;
   cursor: pointer;
@@ -578,4 +579,5 @@ textarea::placeholder {
 .settings-slider-row {
   padding: 4px 2px;
   margin: 0 -2px;
+  overflow: visible;
 }

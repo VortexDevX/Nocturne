@@ -93,7 +93,7 @@ function Row({
         )}
       </div>
       {/* overflow visible so thumb box-shadow isn't clipped */}
-      <div style={{ padding: "6px 2px", margin: "0 -2px" }}>{children}</div>
+      <div className="settings-slider-row">{children}</div>
     </div>
   );
 }
