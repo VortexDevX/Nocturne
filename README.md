@@ -7,12 +7,11 @@
   
   Upload a TXT or EPUB. Read. Close. Nothing stored. Ever.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://nocturne-opal.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
-[Live Demo](https://nocturne-opal.vercel.app) • [Features](#-features) • [Installation](#-installation) • [Tech Stack](#-tech-stack)
+ • [Features](#-features) • [Installation](#-installation) • [Tech Stack](#-tech-stack) • 
 
 </div>
 
@@ -100,29 +99,6 @@
 | [Tailwind CSS 4](https://tailwindcss.com/)    | Styling                         |
 | [Lucide React](https://lucide.dev/)           | Icons                           |
 | [JSZip](https://stuk.github.io/jszip/)        | EPUB parsing                    |
-
----
-
-## 🌐 PWA Installation
-
-### On Mobile (Android)
-
-1. Open [nocturne-opal.vercel.app](https://nocturne-opal.vercel.app)
-2. Tap the **"Install App"** button on the home page
-3. Confirm the installation
-
-### On Mobile (iOS)
-
-1. Open in Safari
-2. Tap the **Share** button
-3. Scroll down and tap **"Add to Home Screen"**
-4. Tap **"Add"**
-
-### On Desktop (Chrome)
-
-1. Open [nocturne-opal.vercel.app](https://nocturne-opal.vercel.app)
-2. Click the install icon in the address bar
-3. Click **"Install"**
 
 ---
 
